@@ -15,24 +15,41 @@ business:
   name: "Clínica Dental Sonrisa Perfecta"
   industry: dental
   website: "clinicasonrisaperfecta.site"
-  timezone: "America/Cancun"        # UTC-5 year-round, NO DST — see note below
-  country: MX
+  timezone: "America/Bogota"        # UTC-5 year-round, NO DST — see note below
+  country: MX                       # PENDIENTE: atar al número Twilio que se compre.
+                                    # Solo se usa para inferir la lada cuando el paciente
+                                    # dice el número sin código de país (ghl_service.to_e164).
+                                    # Número mexicano -> MX. Número colombiano -> CO.
   locale: "es-419"        # es-MX NO es un idioma válido en Retell (verificado en cámara, V06)
-  # RESUELTO: el horario declarado ahora coincide con la agenda real.
-  # El calendario "Limpieza Dental" de GHL devuelve slots de 08:00 a 16:30
-  # (última cita 16:30 + 30 min = cierre 17:00), de lunes a viernes.
-  # Antes el config decía 9:00 y Sofía ofrecía las 8 igual, porque el backend
-  # se las entregaba como disponibles: la agenda manda, no la instrucción.
-  hours: "Lunes a viernes de 8:00 a 17:00"
-  hours_start: "08:00"
+  # RESUELTO (2026-08-05): el horario declarado vuelve a coincidir con la agenda real.
+  # Medido sobre 21 días del calendario "Consultoría Implementación de Funnels y CRM"
+  # (5cZiNfL2nv2dYORwMxlK), el patrón es estable semana a semana:
+  #   lunes a viernes, sin fines de semana
+  #   martes y jueves            -> primer hueco 10:00
+  #   lunes, miércoles y viernes -> primer hueco 11:00
+  #   todos los días             -> último hueco 17:00
+  # Se declara la ventana completa (10:00-17:00), no el mínimo común (11:00), porque
+  # Sofía nunca inventa horarios: solo ofrece los que el backend le da del calendario.
+  # Decir 08:00 la hacía prometer una hora para la que jamás hubo hueco, que es
+  # exactamente el bug que este bloque documentaba como resuelto para el config viejo.
+  #
+  # `hours` es el único de los tres que se usa de verdad: viaja literal al prompt de
+  # Retell (retell_service.py:170) y el prompt lo aplica como regla dura ("Solo ofrece
+  # horarios dentro del horario de atención"). `hours_start` y `hours_end` no los lee
+  # ni el backend ni los prompts; solo los edita scripts/customize.py.
+  hours: "Lunes a viernes de 10:00 a 17:00"
+  hours_start: "10:00"
   hours_end: "17:00"
 
 # -------------------------------------------------------------
 # TIMEZONE WARNING — read before writing book_appointment
 # -------------------------------------------------------------
-# America/Cancun is UTC-05:00 all year. It does NOT observe DST and it is
+# America/Bogota is UTC-05:00 all year. It does NOT observe DST and it is
 # NOT the same as Mexico City (-06:00), which the briefs use as an example.
-# Verified against GHL free-slots: 2026-07-21T08:00:00-05:00
+#
+# 2026-08-04: la Location destino cambió a "JoinsClee (Funnels & CRM)", cuyo
+# timezone declarado es America/Bogota. Mismo offset que el America/Cancun
+# anterior (-05:00 todo el año), así que las citas ya agendadas no se corren.
 #
 # Always DERIVE the offset from `business.timezone`. Never hardcode it.
 # A hardcoded offset books every appointment one hour off.
@@ -172,44 +189,78 @@ knowledge_base:
 # GHL es la ÚNICA fuente de la verdad: contactos, calendario y pipeline
 # en una sola Location. El backend no guarda estado propio.
 #
-# IDs verificados en vivo contra la Location (2026-07-20).
+# -------------------------------------------------------------
+# LOCATION DESTINO — cambiada el 2026-08-04
+#
+# ANTES: una subcuenta demo dental, con ids verificados el 2026-07-20.
+# AHORA: "JoinsClee (Funnels & CRM)" — Np6qnux1pM5NRF9JY3lh, America/Bogota.
+#
+# Los ids viejos NO servían aquí: apuntaban a otra subcuenta y habrían dado
+# 404 en calendario y pipeline. Los de abajo se releyeron en vivo de la
+# Location nueva el 2026-08-04.
+#
+# CONSECUENCIA A OJOS ABIERTOS: este es el CRM real de la agencia, no un
+# sandbox. Sofía va a crear contactos y oportunidades entre los leads reales
+# de JoinsClee. Por eso `outbound.enabled` queda en false (ver ese bloque).
+# -------------------------------------------------------------
 # El PIT y el location_id viven en .env, NO aquí.
 # -------------------------------------------------------------
 crm:
   provider: gohighlevel
   api_base: "https://services.leadconnectorhq.com"
   api_version: "2021-07-28"
-  # location_id -> .env HIGHLEVEL_LOCATION_ID
+  # location_id -> .env HIGHLEVEL_LOCATION_ID  (= Np6qnux1pM5NRF9JY3lh)
   # auth        -> .env HIGHLEVEL_PIT (Bearer)
 
-  calendar_id: "CAyujBZ84e9YzfVl4EMV"        # "Limpieza Dental" — ver nota abajo
-  pipeline_id: "AJeNrg03SbkJ5JbhRs0l"        # "Nuevos Pacientes"
-  stage_id: "072d84e4-5829-46dd-b749-2e61d57a836b"   # "Cita Agendada"
+  # Calendario de la Location de JoinsClee, dado por el operador el 2026-08-05.
+  # OJO con la deuda consciente: este calendario es de consultorías de la agencia,
+  # no una agenda dental. Las "citas de valoración" de Sofía caen ahí mezcladas
+  # con las consultorías reales. Sirve para probar; separarlo antes de producción.
+  calendar_id: "5cZiNfL2nv2dYORwMxlK"        # "Consultoría Implementación de Funnels y CRM"
 
-  # NOTA sobre el calendario: el brief asume uno llamado "Valoración dental".
-  # No existe. Decisión tomada: usar "Limpieza Dental" (activo, devuelve slots).
-  # Deuda consciente: las valoraciones caen en la agenda de limpiezas.
-  # Separarlas cuando crezca el volumen.
-  # El otro calendario, "Dental Consultation" (CKj17k1fVAiGmnz8DpsD), está INACTIVO.
+  # "1. Funnel Agendamiento (Sistema de Ventas Funnels & CRM)" — releído 2026-08-04.
+  # Se eligió entre los 6 pipelines de la Location porque es el único cuyas etapas
+  # calzan con el modelo de Sofía, incluida "No Asiste Cita", que alimenta el outbound.
+  pipeline_id: "8NridlHOCZAsiQjGhxY0"
+  stage_id: "583df04f-1748-40d2-b040-fb0921f95210"   # "🗓️3. Agenda Cita(Online)"
 
   pipeline_stages:
-    # Solo existe un pipeline en la Location. Las citas entran en posición 2.
-    new_lead: "447cc31f-0e7b-4a9c-afb4-9c26af4276e8"
-    engagement: "9a93789f-23b8-4b28-9225-bd5fb2207168"
-    cita_agendada: "072d84e4-5829-46dd-b749-2e61d57a836b"
-    asistio_a_cita: "84d685ec-e383-4833-8c35-abb78441636f"
-    no_asistio: "5fbce81e-f573-4a00-b1fc-37f2cea24548"   # alimenta el worker outbound
-    tratamiento_en_proceso: "b2b72d6c-679c-4cb6-ac30-a0df8fd75f78"
-    cliente_ganado: "e109c91e-fdea-47fc-8c44-452ed4e7f332"
+    # El ORDEN de estas claves es el orden del funnel en el panel
+    # (ghl_read_service.py:50-54). Se conserva el del config anterior.
+    new_lead: "6676fd94-c279-4d92-9c2d-968287192a28"        # 0. Nuevo Contacto(WA/IG/FB)
+    engagement: "93b27fd6-fe90-4454-833a-2e7fea0ac01d"      # 👤1. Nuevo Lead(Cuestionario)
+    cita_agendada: "583df04f-1748-40d2-b040-fb0921f95210"   # 🗓️3. Agenda Cita(Online)
+    asistio_a_cita: "4414fa50-3c24-45bd-b4c1-c0ca069b242e"  # 🔷5. En Evaluación(Interesado)
+    no_asistio: "7641f092-64f6-4eb9-8b6a-39cf932e6bf1"      # 4. No Asiste Cita(Reagendar)
+                                                            # ^ alimenta el worker outbound
+    tratamiento_en_proceso: "98285545-34bc-473e-aaff-864d6bfbe813"  # ⭕7. A Futuro(Nutrición)
+    cliente_ganado: "d6666532-6e0d-4166-bc68-b97e099d6f77"  # ✅6. Venta Ganada(Bienvenida)
+
+    # El eslabón flojo del mapeo es `tratamiento_en_proceso`: este pipeline es de
+    # agendamiento de la agencia y no tiene una etapa equivalente. Ninguna ruta
+    # automática lo escribe (solo /update-lead-status con stage explícito), así
+    # que no rompe nada; queda documentado para no confundir a quien lea el funnel.
+    # "🔴2. No Agenda(Seguimiento)" (8473c0d8-b43f-4081-b4df-a3daaeb20ed9) y
+    # "❌8. Descartar" (42f9d277-1360-44a8-a20c-230c29ca02fe) quedan sin mapear
+    # a propósito: Sofía no tiene un estado que les corresponda.
 
   custom_fields:
-    # Todos verificados contra la Location (2026-07-20). Los cuatro del
-    # post-llamada se crearon vía API; sus fieldKey salieron exactos.
-    reason_for_visit: "contact.reason_for_visit"            # id BVK7cWvDgpH3Y7agkkSf
-    interes_score: "contact.interes_score"                  # NUMERICAL 1-10 · id CYoF8fiHIYXxneFqN4Mq
-    nivel_urgencia: "contact.nivel_urgencia"                # TEXT urgente|normal|baja · id M0550APKstKtCTprbQUr
-    probabilidad_asistir: "contact.probabilidad_asistir"    # NUMERICAL 1-10 · id aUZLaTm63QQIAX5NNA6I
-    resumen_llamada: "contact.resumen_llamada"              # LARGE_TEXT · id Gm5rxFLPuE7y00IUI1kF
+    # Los cinco existen en la Location nueva: creados el 2026-08-05 y verificados
+    # contra Np6qnux1pM5NRF9JY3lh con `python scripts/descubrir_ghl.py`.
+    #
+    # Si alguno faltara, NO degrada en silencio: revienta. `_custom_fields_payload`
+    # (ghl_service.py:388) lanza GHLError con "Custom field key(s) not found in
+    # the Location" y el endpoint devuelve 502. Como `reason` es un parámetro
+    # declarado de las dos tools de Retell, es el payload normal de Sofía: sin
+    # estos campos, una llamada real NO agenda nada.
+    # (El docstring de esa función habla de un descarte silencioso; se refiere al
+    #  shape {key, field_value} de la API, que este repo no usa. Aquí resuelve
+    #  ids contra la Location y falla duro si no los encuentra.)
+    reason_for_visit: "contact.reason_for_visit"            # TEXT · id X1RsyxvIsaMysbQktxb4
+    interes_score: "contact.interes_score"                  # NUMERICAL 1-10 · id OVHuXTLxMgAQPjvnPPmV
+    nivel_urgencia: "contact.nivel_urgencia"                # TEXT urgente|normal|baja · id yUsa1pO9kSHssMnGvxOC
+    probabilidad_asistir: "contact.probabilidad_asistir"    # NUMERICAL 1-10 · id hkArtjllzQa6DP7bdp6z
+    resumen_llamada: "contact.resumen_llamada"              # LARGE_TEXT · id GWx0djCmZkRoej6l0fQO
 
   # NO USAR — campos que existen pero no nos tocan:
   #   contact.notas_clinicas         -> expediente clínico, lo escribe el doctor.
@@ -241,7 +292,19 @@ crm:
 # OUTBOUND — worker en Modal, cada hora
 # -------------------------------------------------------------
 outbound:
-  enabled: true
+  # ⚠️ APAGADO A PROPÓSITO el 2026-08-04, por dos razones independientes:
+  #
+  # 1. La Location es ahora el CRM real de JoinsClee. Con esto en true, el cron
+  #    horario leería la etapa "4. No Asiste Cita(Reagendar)" y le MARCARÍA POR
+  #    TELÉFONO a leads reales de la agencia, creyendo que son pacientes de una
+  #    clínica dental. Sofía se presentaría como recepcionista de "Sonrisa
+  #    Perfecta" a alguien que agendó una consultoría de CRM.
+  # 2. El outbound además exige la verificación de identidad de Retell. Sin ella
+  #    Retell rechaza las salientes y el cron falla en silencio cada hora.
+  #
+  # Para encenderlo: verificar identidad en Retell, confirmar que los contactos
+  # de la etapa son de verdad pacientes, y revisar `exclude_tags` de abajo.
+  enabled: false
   schedule_cron: "0 * * * *"
   targets:
     - no_shows        # stage "No Asistió"
@@ -268,13 +331,19 @@ outbound:
   max_attempts: 3
 
   # Contactos con cualquiera de estos tags NUNCA se marcan.
-  # `demo-ficticio` protege los 20 contactos de prueba de esta Location:
-  # son números inventados y marcarles cuesta dinero sin recuperar a nadie.
+  # `demo-ficticio` protegía los 20 contactos de prueba de la Location VIEJA.
+  # En "JoinsClee (Funnels & CRM)" ese tag no existe, así que hoy esta lista no
+  # protege a nadie: el filtro real es que `enabled` está en false.
+  # Antes de encender el outbound, agregar aquí un tag que marque explícitamente
+  # a los contactos que SÍ son pacientes, o invertir la lógica a lista blanca.
   exclude_tags:
     - demo-ficticio
     - no-llamar
 
   # Dónde vive el estado del seguimiento. En GHL, no en el worker.
   tracking_fields:
-    last_attempt: "contact.ultimo_intento_outbound"   # DATE · id UgyrgW8CXVLP0DGHXSma
-    attempts: "contact.intentos_outbound"             # NUMERICAL · id CReNx2QCrbtsl3zI5emN
+    # También existen ya en la Location nueva (creados 2026-08-05).
+    # Sin ellos el worker no podría llevar la cuenta: `cooldown_hours` y
+    # `max_attempts` dejarían de aplicar y le marcaría al mismo lead cada hora.
+    last_attempt: "contact.ultimo_intento_outbound"   # DATE · id 1Xh6LaV1pGw6ErzWP7vo
+    attempts: "contact.intentos_outbound"             # NUMERICAL · id j9eBMX7mqfoKlBkg0HiA

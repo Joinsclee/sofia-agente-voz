@@ -354,3 +354,33 @@ acceso al sistema de citas: primero las manos, luego la voz.
 - **Python 3.12 se verifica de PRIMERO.** Modal no soporta más nuevo, y descubrirlo a media
   instalación obliga a rehacer todo lo anterior bajo otro intérprete. `preflight` corre con
   el Python del sistema (puede ser 3.14) y por eso no importa nada de `app/`: solo stdlib.
+- **`setup.py all` NO corre `preflight` ni `interview`.** Sus pasos son validate → secret →
+  deploy → provision → twilio → secret → vercel. No hay ningún camino por el que llene el
+  `.env` solo: con el `.env` vacío falla idéntico las veces que lo corras.
+- **`provision` duplica: no es idempotente.** Cada corrida crea un LLM y un agente NUEVOS en
+  Retell y solo pisa los ids del `.env`, dejando huérfanos los anteriores. Córrelo una vez.
+- **El segundo `secret` de `all` no va seguido de redeploy.** Modal clava el `secret_id` en la
+  definición de la función al desplegar, así que el backend y el worker se quedan con la
+  primera versión del Secret y no ven los agent ids. Re-despliega ambas apps al terminar.
+- **`TWILIO_PHONE_NUMBER` vacío pasa `validate`** ("número sin configurar" cuenta como OK) y
+  revienta después en el paso `twilio` con un traceback crudo — `setup.py` solo captura
+  `SetupError`.
+
+## Skill routing
+
+When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
+
+Key routing rules:
+- Product ideas/brainstorming → invoke /office-hours
+- Strategy/scope → invoke /plan-ceo-review
+- Architecture → invoke /plan-eng-review
+- Design system/plan review → invoke /design-consultation or /plan-design-review
+- Full review pipeline → invoke /autoplan
+- Bugs/errors → invoke /investigate
+- QA/testing site behavior → invoke /qa or /qa-only
+- Code review/diff check → invoke /review
+- Visual polish → invoke /design-review
+- Ship/deploy/PR → invoke /ship or /land-and-deploy
+- Save progress → invoke /context-save
+- Resume context → invoke /context-restore
+- Author a backlog-ready spec/issue → invoke /spec
