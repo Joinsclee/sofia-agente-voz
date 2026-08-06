@@ -715,6 +715,150 @@ def set_temperature_tag(contact_id: str, temperature: str) -> dict[str, Any]:
     return {"contact_id": contact_id, "temperature": value, "removed": stale, "tags": applied}
 
 
+# Finds the card a returning patient already has, so we move it instead of duplicating it.
+def find_opportunity_for_contact(contact_id: str) -> dict[str, Any] | None:
+    """GET /opportunities/search — the contact's existing card, or None.
+
+    GHL refuses a second opportunity for the same contact: POST /opportunities/
+    answers 400 `OPPORTUNITY_NO_DUPLICATE`. That makes every returning patient a
+    failure unless we look first — and returning patients are the whole point of
+    the outbound worker, since a no-show by definition already has a card.
+
+    Returns `pipeline_id` alongside the id on purpose. The card may live in a
+    pipeline that has nothing to do with Sofía, and moving *that* one into a
+    dental stage is worse than the duplicate error it would have avoided.
+    """
+    if not contact_id:
+        raise ValueError("contact_id is required to look up an opportunity")
+
+    body = _request(
+        "GET",
+        "/opportunities/search",
+        params={"location_id": _location_id(), "contact_id": contact_id},
+        retry=True,
+    )
+    opportunities = (body.get("opportunities") if isinstance(body, Mapping) else None) or []
+    if not opportunities:
+        return None
+
+    # GHL allows one per contact, so the first is the one. Sorted for determinism
+    # in case a future API version relaxes that.
+    first = sorted(opportunities, key=lambda o: str(o.get("id") or ""))[0]
+    return {
+        "id": first.get("id"),
+        "pipeline_id": first.get("pipelineId"),
+        "stage_id": first.get("pipelineStageId"),
+        "name": first.get("name"),
+        "status": first.get("status"),
+        "raw": first,
+    }
+
+
+def get_opportunity(opportunity_id: str) -> dict[str, Any] | None:
+    """GET /opportunities/{id} — the authoritative read.
+
+    Prefer this over `/opportunities/search` when correctness matters: the search
+    index lags behind writes by seconds, so a card moved a moment ago still comes
+    back in its old stage there while this endpoint already shows the new one.
+    """
+    if not opportunity_id:
+        raise ValueError("opportunity_id is required")
+
+    body = _request("GET", f"/opportunities/{opportunity_id}", retry=True)
+    opportunity = (body.get("opportunity") if isinstance(body, Mapping) else None) or None
+    if not opportunity:
+        return None
+    return {
+        "id": opportunity.get("id"),
+        "pipeline_id": opportunity.get("pipelineId"),
+        "stage_id": opportunity.get("pipelineStageId"),
+        "name": opportunity.get("name"),
+        "status": opportunity.get("status"),
+        "raw": opportunity,
+    }
+
+
+def _duplicate_opportunity_id(exc: GHLAPIError) -> str | None:
+    """Pull the existing card's id out of GHL's 400, if that is what this is."""
+    payload = exc.payload if isinstance(exc.payload, Mapping) else {}
+    if payload.get("code") != "OPPORTUNITY_NO_DUPLICATE":
+        return None
+    meta = payload.get("meta")
+    return (meta or {}).get("existingId") if isinstance(meta, Mapping) else None
+
+
+# The one entry point /update-lead-status needs: land the card in a stage, whatever it takes.
+def ensure_opportunity_stage(
+    contact_id: str,
+    stage_id: str,
+    *,
+    name: str,
+    pipeline_id: str | None = None,
+) -> dict[str, Any]:
+    """Put the contact's card in `stage_id`, creating one only if none exists.
+
+    GHL allows ONE opportunity per contact and rejects the second with a 400
+    `OPPORTUNITY_NO_DUPLICATE`, so creating blind fails for every returning
+    patient — the outbound worker's whole target, since a no-show already has a
+    card.
+
+    Two things make this less trivial than "look, then create":
+
+    1. The lookup goes through `/opportunities/search`, whose index lags writes.
+       A card opened by /book-appointment seconds earlier can still be invisible,
+       so the create is also wrapped: GHL hands back `meta.existingId` on the
+       duplicate error and we move that one instead.
+    2. The card we find may belong to a pipeline that has nothing to do with
+       Sofía. Dragging a signed-contract card into a dental stage is worse than
+       the error it avoids, so we leave it alone and report it.
+
+    Returns {"id", "stage_changed", "created", "foreign_pipeline"}.
+    `foreign_pipeline` is the other pipeline's id when we deliberately did nothing.
+    """
+    target_pipeline = pipeline_id or _default_pipeline_id()
+
+    def _land(existing: Mapping[str, Any]) -> dict[str, Any]:
+        """Move it, unless it belongs to somebody else's pipeline."""
+        owner = existing.get("pipeline_id")
+        if owner and owner != target_pipeline:
+            LOG.warning(
+                "Opportunity %s left untouched: pipeline %s is not Sofía's (%s)",
+                existing.get("id"),
+                owner,
+                target_pipeline,
+            )
+            return {
+                "id": existing.get("id"),
+                "stage_changed": False,
+                "created": False,
+                "foreign_pipeline": owner,
+            }
+        update_opportunity_stage(existing["id"], stage_id, pipeline_id=target_pipeline)
+        return {"id": existing["id"], "stage_changed": True, "created": False, "foreign_pipeline": None}
+
+    existing = find_opportunity_for_contact(contact_id)
+    if existing:
+        return _land(existing)
+
+    try:
+        created = create_opportunity(
+            contact_id=contact_id,
+            name=name,
+            pipeline_id=target_pipeline,
+            stage_id=stage_id,
+        )
+    except GHLAPIError as exc:
+        duplicate_id = _duplicate_opportunity_id(exc)
+        if not duplicate_id:
+            raise
+        # The search index had not caught up. Read the real card and land on it.
+        LOG.info("Search missed opportunity %s for contact %s; recovering from the 400", duplicate_id, contact_id)
+        recovered = get_opportunity(duplicate_id) or {"id": duplicate_id, "pipeline_id": None}
+        return _land(recovered)
+
+    return {"id": created["id"], "stage_changed": True, "created": True, "foreign_pipeline": None}
+
+
 # Moves the patient's card along the pipeline as the relationship advances.
 def update_opportunity_stage(
     opportunity_id: str,

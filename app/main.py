@@ -687,17 +687,30 @@ async def update_lead_status(payload: UpdateLeadStatusRequest) -> JSONResponse:
 
     opportunity_id = payload.opportunity_id
     stage_changed = False
+    warnings: list[str] = []
+
     if stage_id:
         if opportunity_id:
+            # The caller already knows which card it is. Trust it and move it.
             ghl.update_opportunity_stage(opportunity_id, stage_id)
+            stage_changed = True
         else:
-            created = ghl.create_opportunity(
-                contact_id=contact_id,
+            # Retell never sends an opportunity_id (the tool only declares
+            # phone/temperature/stage), so this is the path every real call takes.
+            # ensure_opportunity_stage handles the returning patient, whose card
+            # already exists and whom a blind create used to reject with a 400.
+            landed = ghl.ensure_opportunity_stage(
+                contact_id,
+                stage_id,
                 name=payload.opportunity_name or f"Lead {contact_id}",
-                stage_id=stage_id,
             )
-            opportunity_id = created["id"]
-        stage_changed = True
+            opportunity_id = landed["id"]
+            stage_changed = landed["stage_changed"]
+            if landed["foreign_pipeline"]:
+                warnings.append(
+                    f"El contacto ya tiene una oportunidad en el pipeline {landed['foreign_pipeline']}, "
+                    "que no es el de Sofía. No la moví para no alterar otro proceso."
+                )
 
     LOG.info(
         "update-lead-status call=%s contact=%s tags=%s stage=%s",
@@ -713,6 +726,7 @@ async def update_lead_status(payload: UpdateLeadStatusRequest) -> JSONResponse:
             "opportunity_id": opportunity_id,
             "stage_id": stage_id,
             "stage_changed": stage_changed,
+            "warnings": warnings,
         },
         message="Actualicé el estado del paciente.",
     )
