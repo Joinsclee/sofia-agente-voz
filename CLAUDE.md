@@ -319,6 +319,16 @@ acceso al sistema de citas: primero las manos, luego la voz.
 
 ## Gotchas conocidos
 
+- **"Retell no llama a Colombia" solo aplica a números COMPRADOS en Retell.** Retell
+  únicamente vende números de EEUU y Canadá, y su cobertura saliente propia no incluye
+  Colombia. Con un número IMPORTADO por SIP trunk, el alcance lo define el proveedor de
+  terminación, no Retell. Verificar antes de prometerlo, pero no darlo por imposible: de
+  eso depende que el worker de devolución de llamadas sirva para un cliente colombiano.
+- **En Colombia NO hay portabilidad de números fijos.** La CRC solo implementó la móvil.
+  Una clínica conserva su número publicado DESVIÁNDOLO, nunca moviéndolo. Y si el operador
+  reescribe el caller ID en ese salto, hay que declarar el número que desvía en
+  `business.forwarding_source_numbers` o el sistema escribe a todos los pacientes contra
+  el conmutador de la clínica. Ver `_is_forwarding_line` en `app/main.py`.
 - **Retell outbound no cuelga solo.** Hay que agregar la tool **`end_call`** al LLM y
   configurar `end_call_after_silence_ms: 10000`. Sin eso, la llamada se queda abierta
   consumiendo minutos después de que el paciente se despide.

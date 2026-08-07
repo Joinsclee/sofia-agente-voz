@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Sequence
 from typing import Any
 
 from twilio.base.exceptions import TwilioRestException
@@ -46,10 +47,25 @@ LOG = logging.getLogger(__name__)
 # this single string is the difference between a ringing phone and a dead line.
 RETELL_ORIGINATION_URI = "sip:sip.retellai.com"
 
-# Retell's SBC CIDR. Whitelisting it is what lets Retell place calls OUT through
-# this trunk. The alternative is credential auth; IP auth is preferred here
-# because it adds no secret to store, rotate or leak.
-RETELL_SIP_CIDR = "18.98.16.120/30"
+# Retell's SBC ranges. Whitelisting them is what lets Retell place calls OUT
+# through this trunk. The alternative is credential auth; IP auth is preferred
+# here because it adds no secret to store, rotate or leak.
+#
+# ALL of them, not just the first. This used to whitelist 18.98.16.120/30 alone,
+# which works right up until Retell places a call from one of the others: then
+# outbound fails for some calls and not others, with nothing in our logs, which
+# is the worst shape a production bug can take. Re-verify against
+# docs.retellai.com before changing.
+RETELL_SIP_CIDRS = (
+    "18.98.16.120/30",
+    "3.42.144.0/23",
+    "153.57.128.0/18",
+    "143.223.88.0/21",
+    "161.115.160.0/19",
+)
+
+# Kept for callers that still expect a single range.
+RETELL_SIP_CIDR = RETELL_SIP_CIDRS[0]
 RETELL_SIP_CIDR_NETWORK, RETELL_SIP_CIDR_PREFIX = RETELL_SIP_CIDR.split("/")
 
 # Twilio requires the trunk domain to be globally unique across ALL accounts,
@@ -180,15 +196,24 @@ def configure_origination(trunk_sid: str, *, uri: str = RETELL_ORIGINATION_URI) 
 # --------------------------------------------------------------------------
 
 
-def authorize_retell_ips(trunk_sid: str, *, cidr: str = RETELL_SIP_CIDR) -> dict[str, Any]:
-    """Whitelist Retell's SBC on the trunk, so outbound calls are accepted.
+def authorize_retell_ips(
+    trunk_sid: str,
+    *,
+    cidrs: Sequence[str] = RETELL_SIP_CIDRS,
+) -> dict[str, Any]:
+    """Whitelist Retell's SBC ranges on the trunk, so outbound calls are accepted.
 
     Inbound does not need this. It is configured now anyway because the outbound
     worker is part of this system, and discovering the gap at 9am when the cron
     starts dialling no-shows is a worse way to find out.
+
+    Every published range goes in. With only one of them the trunk accepts calls
+    from that SBC and silently rejects the rest, so outbound works for some calls
+    and not others — intermittent, invisible from our side, and impossible to
+    reproduce on demand. Adding a range is idempotent: already-present ones are
+    skipped.
     """
     client = _client()
-    network, prefix = cidr.split("/")
     list_name = "Retell SBC"
 
     acl = next(
@@ -201,13 +226,20 @@ def authorize_retell_ips(trunk_sid: str, *, cidr: str = RETELL_SIP_CIDR) -> dict
         created = True
         LOG.info("IP access control list created: %s", acl.sid)
 
-    addresses = client.sip.ip_access_control_lists(acl.sid).ip_addresses.list(limit=50)
-    if not any(a.ip_address == network and str(a.cidr_prefix_length) == prefix for a in addresses):
+    addresses = client.sip.ip_access_control_lists(acl.sid).ip_addresses.list(limit=100)
+    present = {(a.ip_address, str(a.cidr_prefix_length)) for a in addresses}
+
+    added: list[str] = []
+    for cidr in cidrs:
+        network, prefix = cidr.split("/")
+        if (network, prefix) in present:
+            continue
         client.sip.ip_access_control_lists(acl.sid).ip_addresses.create(
-            friendly_name="Retell SBC range",
+            friendly_name=f"Retell SBC {cidr}",
             ip_address=network,
             cidr_prefix_length=int(prefix),
         )
+        added.append(cidr)
         LOG.info("Whitelisted %s on ACL %s", cidr, acl.sid)
 
     # Attaching an already-attached ACL is a 400, not a no-op.
@@ -216,7 +248,14 @@ def authorize_retell_ips(trunk_sid: str, *, cidr: str = RETELL_SIP_CIDR) -> dict
         client.trunking.v1.trunks(trunk_sid).ip_access_control_lists.create(ip_access_control_list_sid=acl.sid)
         LOG.info("ACL %s attached to trunk %s", acl.sid, trunk_sid)
 
-    return {"acl_sid": acl.sid, "cidr": cidr, "created": created}
+    return {
+        "acl_sid": acl.sid,
+        "cidrs": list(cidrs),
+        "added": added,
+        "created": created,
+        # Kept so existing callers and logs that read `cidr` keep working.
+        "cidr": cidrs[0] if cidrs else None,
+    }
 
 
 # --------------------------------------------------------------------------
