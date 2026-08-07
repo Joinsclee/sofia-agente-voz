@@ -60,3 +60,11 @@ Thumbs.db
 
 # Demo del intro V00 — trae un número real hardcodeado, no versionar
 scripts/demo_intro.py
+
+# Documentación comercial — NO versionar.
+# Trae el dossier de un prospecto real (nombre de la CEO, auditoría de su web y
+# de sus cuentas, hallazgos incómodos sobre su sitio) y la estructura de precios
+# y márgenes de la agencia. Este repo está pensado para distribuirse: el
+# INSTALAR.md está escrito para que un alumno lo clone y lo instale. Si esta
+# carpeta entra, esa investigación viaja con cada copia.
+Documentación/
