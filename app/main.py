@@ -255,6 +255,36 @@ def _same_line(a: str | None, b: str | None) -> bool:
         return "".join(filter(str.isdigit, a)) == "".join(filter(str.isdigit, b))
 
 
+def _is_forwarding_line(from_number: str | None, to_number: str | None) -> bool:
+    """True when the inbound caller ID is a line that forwards to us, not a patient.
+
+    Colombia has no fixed-line portability, so a clinic keeps its published
+    number by FORWARDING it to ours. Some carriers pass the caller's own number
+    across that hop and some replace it with the forwarding line, and which one
+    you get is not knowable from here.
+
+    Two shapes, and only checking the first is a trap:
+
+      * The clinic forwards its number straight to the same number being
+        dialled. Then `from == to` and the comparison alone catches it.
+      * The usual production shape: the clinic's published 604 forwards to a
+        DIFFERENT number we provisioned. The rewritten caller ID is the
+        published 604, `to_number` is the new line, they do not match, and the
+        comparison never fires. The corrupted line then wins over the spoken
+        digits and every patient is written against the clinic's switchboard.
+
+    So the forwarding numbers are declared in `business.forwarding_source_numbers`
+    and treated as identifying nobody. Declared and not guessed: a number that
+    forwards to us is a fact of the install, not something to infer at runtime.
+    """
+    if not from_number:
+        return False
+    if _same_line(from_number, to_number):
+        return True
+    declared = ghl.config_value("business.forwarding_source_numbers", []) or []
+    return any(_same_line(from_number, str(n)) for n in declared)
+
+
 def _line_number(req: RetellToolRequest) -> str | None:
     """The patient's number as the telephony layer sees it, or None.
 
@@ -280,11 +310,10 @@ def _line_number(req: RetellToolRequest) -> str | None:
     if direction == "outbound":
         return req.to_number
     if direction == "inbound":
-        if _same_line(req.from_number, req.to_number):
+        if _is_forwarding_line(req.from_number, req.to_number):
             LOG.warning(
-                "call=%s: caller ID equals the dialled line (%s). The carrier is "
-                "rewriting it on forward, so it identifies no patient — falling "
-                "back to the spoken number.",
+                "call=%s: caller ID %s is a forwarding line, not a patient. The "
+                "carrier rewrote it on the hop — falling back to the spoken number.",
                 req.call_id,
                 req.from_number,
             )

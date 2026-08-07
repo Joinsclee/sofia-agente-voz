@@ -44,6 +44,28 @@ business:
   hours_start: "10:00"
   hours_end: "17:00"
 
+  # -----------------------------------------------------------------
+  # Números que DESVÍAN hacia el agente. En E.164.
+  #
+  # Colombia no tiene portabilidad de fijos (la CRC solo implementó la móvil),
+  # así que una clínica conserva su número publicado desviándolo al nuestro, no
+  # moviéndolo. En ese salto algunos operadores conservan el número de quien
+  # llama y otros lo reemplazan por la línea que desvía.
+  #
+  # Si lo reemplazan, ese número entra como si fuera el del paciente. Y como la
+  # línea telefónica le gana a los dígitos dictados (la corrección del número
+  # fantasma), TODOS los pacientes se escribirían con él. upsert_contact es
+  # idempotente por teléfono, así que no se duplicarían: colapsarían en un solo
+  # contacto con todas las citas encima, y la clínica no podría devolver ni una
+  # llamada.
+  #
+  # Declarar aquí cada número que desvía hace que el sistema lo trate como lo
+  # que es: una línea que no identifica a nadie. Se cae entonces al número que
+  # el paciente dictó, que el prompt sí pide y confirma con rigor.
+  #
+  # Se declara, no se adivina: qué número desvía es un hecho de la instalación.
+  forwarding_source_numbers: []
+
 # -------------------------------------------------------------
 # TIMEZONE WARNING — read before writing book_appointment
 # -------------------------------------------------------------

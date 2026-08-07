@@ -94,3 +94,39 @@ def test_un_paciente_que_llama_desde_otra_linea_sigue_ganando():
     phone, source = phone_of_record(r, "+570000000000")
     assert phone == PACIENTE
     assert source == "line"
+
+
+# --------------------------------------------------------------------------
+# La topología real: el número publicado desvía a OTRO número nuestro
+# --------------------------------------------------------------------------
+
+
+def test_desvio_a_un_numero_distinto_tambien_se_descarta(monkeypatch):
+    """El caso que el guard de `from == to` NO cubre, y es el de producción.
+
+    La clínica publica su 604 y lo desvía a un DID nuevo. Si el operador
+    reescribe el caller ID, llega el 604 publicado mientras `to_number` es el
+    DID: no coinciden, así que compararlos no basta. Hay que declararlo.
+    """
+    import app.main as main
+
+    DID_NUEVO = "+576042044726"
+    monkeypatch.setattr(
+        main.ghl, "config_value",
+        lambda key, default=None: [CLINICA] if key == "business.forwarding_source_numbers" else default,
+    )
+    r = req(direction="inbound", from_number=CLINICA, to_number=DID_NUEVO)
+    phone, source = phone_of_record(r, PACIENTE)
+    assert phone == PACIENTE
+    assert source == "spoken"
+
+
+def test_sin_numeros_declarados_el_comportamiento_no_cambia(monkeypatch):
+    """La lista vacía es el default: no debe afectar a una instalación normal."""
+    import app.main as main
+
+    monkeypatch.setattr(main.ghl, "config_value", lambda key, default=None: default)
+    r = req(direction="inbound", from_number=PACIENTE, to_number=CLINICA)
+    phone, source = phone_of_record(r, None)
+    assert phone == PACIENTE
+    assert source == "line"
