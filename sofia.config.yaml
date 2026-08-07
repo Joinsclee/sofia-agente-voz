@@ -16,10 +16,13 @@ business:
   industry: dental
   website: "clinicasonrisaperfecta.site"
   timezone: "America/Bogota"        # UTC-5 year-round, NO DST — see note below
-  country: MX                       # PENDIENTE: atar al número Twilio que se compre.
+  country: CO                       # RESUELTO 2026-08-06 tras el primer ensayo real.
                                     # Solo se usa para inferir la lada cuando el paciente
-                                    # dice el número sin código de país (ghl_service.to_e164).
-                                    # Número mexicano -> MX. Número colombiano -> CO.
+                                    # dicta el número sin código de país (ghl_service.to_e164).
+                                    # Estaba en MX y un celular colombiano dictado a 10
+                                    # dígitos se guardó como +523182354883: lada equivocada,
+                                    # y devolver la llamada marcaría a México.
+                                    # La Location, el timezone y los pacientes son colombianos.
   locale: "es-419"        # es-MX NO es un idioma válido en Retell (verificado en cámara, V06)
   # RESUELTO (2026-08-05): el horario declarado vuelve a coincidir con la agenda real.
   # Medido sobre 21 días del calendario "Consultoría Implementación de Funnels y CRM"
