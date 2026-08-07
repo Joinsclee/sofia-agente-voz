@@ -245,6 +245,16 @@ class UpdateLeadStatusRequest(RetellToolRequest):
 # --------------------------------------------------------------------------
 
 
+def _same_line(a: str | None, b: str | None) -> bool:
+    """True when two raw numbers are the same line, whatever their formatting."""
+    if not a or not b:
+        return False
+    try:
+        return ghl.to_e164(a) == ghl.to_e164(b)
+    except ValueError:
+        return "".join(filter(str.isdigit, a)) == "".join(filter(str.isdigit, b))
+
+
 def _line_number(req: RetellToolRequest) -> str | None:
     """The patient's number as the telephony layer sees it, or None.
 
@@ -252,11 +262,33 @@ def _line_number(req: RetellToolRequest) -> str | None:
     dialled — which the worker itself chose from GHL, so it is correct by
     construction. Both come off the SIP signalling, never off speech-to-text.
     A web/test call with no PSTN leg carries neither, hence None.
+
+    THE FORWARDING CASE. A clinic that keeps its published number forwards it to
+    ours instead of porting it. Some carriers preserve the original caller ID
+    through that hop and some replace it with the forwarding line, and which one
+    you get is not knowable from here. If it is replaced, `from_number` is the
+    CLINIC's own number, and since the line outranks the spoken digits every
+    patient would be written against it. `upsert_contact` is idempotent by
+    phone, so they would not pile up as duplicates: they would collapse into a
+    SINGLE contact carrying every appointment, and the clinic could never call
+    anyone back. Silent, and worse the better the system works.
+
+    So a line that equals the number being dialled identifies nobody. Return
+    None and let the spoken number take over, which is exactly what it is for.
     """
     direction = (req.direction or "").lower()
     if direction == "outbound":
         return req.to_number
     if direction == "inbound":
+        if _same_line(req.from_number, req.to_number):
+            LOG.warning(
+                "call=%s: caller ID equals the dialled line (%s). The carrier is "
+                "rewriting it on forward, so it identifies no patient — falling "
+                "back to the spoken number.",
+                req.call_id,
+                req.from_number,
+            )
+            return None
         return req.from_number
     return None
 
