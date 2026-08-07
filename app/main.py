@@ -979,9 +979,14 @@ if modal is not None:
     @modal_app.function(
         image=image,
         secrets=[modal.Secret.from_name(MODAL_SECRET_NAME)],
-        # Scales to zero: we only pay while a call is actually being handled.
-        # Before the number goes live, set `min_containers=1` — a cold start
-        # mid-call is dead air on the phone, and dead air loses the patient.
+        # The number IS live, so this is no longer optional. Measured 2026-08-06
+        # on a real call: the container had gone to sleep, so book_appointment
+        # cost 6.5s of cold start on top of its own 5.8s. That is 12.3s of
+        # silence against `end_call_after_silence_ms`, and the call died one
+        # beat before Sofía could confirm the appointment. The booking existed;
+        # the patient hung up never knowing it. That is the exact failure this
+        # project is built to avoid.
+        min_containers=1,
     )
     @modal.asgi_app()
     def fastapi_app():

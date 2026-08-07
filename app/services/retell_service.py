@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -1061,6 +1062,63 @@ def _live_llm(agent_id: str) -> dict[str, Any]:
     return _as_dict(_client().llm.retrieve(llm_id, version=int(float(llm_version))))
 
 
+# Turn-taking and realism knobs. Deliberately NOT exposed in the panel — a clinic
+# owner turning these blind is how a call starts talking over the patient. They
+# belong to the agency, but they still have to go out through the publish path or
+# they never reach the live number (bug V07/V09).
+#
+# The allowlist is the point: `agent.update` would happily accept any field name,
+# including a typo, and silently do nothing useful.
+CONVERSATION_FIELDS: frozenset[str] = frozenset(
+    {
+        "ambient_sound",
+        "ambient_sound_volume",
+        "enable_backchannel",
+        "backchannel_frequency",
+        "backchannel_words",
+        "responsiveness",
+        "interruption_sensitivity",
+        "reminder_trigger_ms",
+        "reminder_max_count",
+        "stt_mode",
+        "denoising_mode",
+        "voice_emotion",
+        "timezone",
+        # Not a realism knob: a deadline. It has to be longer than the slowest
+        # tool round trip or the call dies mid-booking. Measured 2026-08-06:
+        # book_appointment takes 5.8s warm, plus 6.5s if the Modal container is
+        # cold — 12.3s against a 10s limit, which is exactly how a real call was
+        # killed one second before Sofía could confirm the appointment.
+        "end_call_after_silence_ms",
+    }
+)
+
+# Retell rejects anything outside this set with a 400. There is no clinic option.
+AMBIENT_SOUNDS: frozenset[str] = frozenset(
+    {"coffee-shop", "convention-hall", "summer-outdoor", "mountain-outdoor", "static-noise", "call-center"}
+)
+
+
+def _validate_conversation_fields(fields: Mapping[str, Any]) -> dict[str, Any]:
+    """Reject unknown keys and out-of-range values before they reach Retell."""
+    unknown = sorted(set(fields) - CONVERSATION_FIELDS)
+    if unknown:
+        raise RetellServiceError(f"Unknown conversation field(s): {unknown}. Allowed: {sorted(CONVERSATION_FIELDS)}")
+
+    clean = dict(fields)
+    ambient = clean.get("ambient_sound")
+    if ambient is not None and ambient not in AMBIENT_SOUNDS:
+        raise RetellServiceError(f"ambient_sound must be one of {sorted(AMBIENT_SOUNDS)} or None, got `{ambient}`")
+
+    # Both are [0,1] and both DEFAULT TO 1, i.e. the maximum. Raising them is not
+    # a thing; the useful direction is down, so a call stops trampling the patient.
+    for key in ("responsiveness", "interruption_sensitivity", "backchannel_frequency"):
+        value = clean.get(key)
+        if value is not None and not (0.0 <= float(value) <= 1.0):
+            raise RetellServiceError(f"{key} must be between 0 and 1, got {value}")
+    return clean
+
+
 def publish_agent_change(
     agent_id: str,
     *,
@@ -1069,12 +1127,18 @@ def publish_agent_change(
     voice_temperature: float | None = None,
     llm_temperature: float | None = None,
     llm_general_prompt: str | None = None,
+    conversation: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Apply a change to one agent (and/or its LLM) and PUBLISH it live.
 
     Any subset of the fields may be given. Voice fields land on the agent; the
     temperature and prompt land on the coupled LLM. Whatever is passed ends up
     on the live phone number, not in a draft.
+
+    `conversation` carries the turn-taking and realism knobs from
+    CONVERSATION_FIELDS. They ride the same create_version -> update -> publish
+    path as everything else, because that path is the only one that reaches a
+    real call.
     """
     published = _latest_published_version(agent_id)
 
@@ -1101,6 +1165,8 @@ def publish_agent_change(
         agent_fields["voice_speed"] = voice_speed
     if voice_temperature is not None:
         agent_fields["voice_temperature"] = voice_temperature
+    if conversation:
+        agent_fields.update(_validate_conversation_fields(conversation))
     if agent_fields:
         _client().agent.update(agent_id, **agent_fields)
 
