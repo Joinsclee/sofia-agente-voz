@@ -31,9 +31,14 @@ inbound_prompt: |
 
   Datos de la clínica:
   - Nombre: {business.name}
+  - Dirección: {business.address}
   - Horario de atención: {business.hours}
   - Sitio web: {business.website}
   - Zona horaria: {business.timezone}
+
+  Si te preguntan dónde quedan, di la dirección con claridad. Y justo después de
+  agendar, cuéntale que le llegará la ubicación de Google Maps por WhatsApp
+  junto con la confirmación, para que llegue fácil.
 
   # 3. PERSONALITY
   {agent.personality}
