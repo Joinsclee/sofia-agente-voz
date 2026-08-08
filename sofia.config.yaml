@@ -12,9 +12,9 @@
 # =============================================================
 
 business:
-  name: "Clínica Dental Sonrisa Perfecta"
-  industry: dental
-  website: "clinicasonrisaperfecta.site"
+  name: "Clínica Estética Aurora"
+  industry: estetica
+  website: "clinicaesteticaaurora.site"
   timezone: "America/Bogota"        # UTC-5 year-round, NO DST — see note below
   country: CO                       # RESUELTO 2026-08-06 tras el primer ensayo real.
                                     # Solo se usa para inferir la lada cuando el paciente
@@ -171,42 +171,61 @@ pacing:
 # de la valoración.
 # -------------------------------------------------------------
 knowledge_base:
-  currency: MXN
+  currency: COP
   prices_are_approximate: true
+  financing: ["Welli", "Servicredito"]
 
+  # Precios COP de referencia ("desde"/"anda alrededor de"). El valor final
+  # SIEMPRE sale de la valoración: cada cuerpo es distinto.
   treatments:
-    - key: limpieza
-      name: "Limpieza dental"
-      price_approx: 800
+    # -- Cirugía plástica --
+    - key: rinoplastia
+      name: "Rinoplastia"
+      price_approx: 8000000
 
-    - key: blanqueamiento
-      name: "Blanqueamiento"
-      price_approx: 3500
+    - key: mamoplastia
+      name: "Mamoplastia de aumento"
+      price_approx: 10000000
 
-    - key: ortodoncia
-      name: "Ortodoncia"
-      price_approx: 500
-      unit: mensual                  # ~$500 AL MES, no precio total
+    - key: mastopexia
+      name: "Mastopexia (levantamiento de senos)"
+      price_approx: 9000000
 
-    - key: implante
-      name: "Implante"
-      price_approx: 15000
+    - key: lipoescultura
+      name: "Lipoescultura / lipoabdominoplastia"
+      price_approx: 9000000
 
-    - key: endodoncia
-      name: "Endodoncia"
-      price_approx: 4000
+    - key: blefaroplastia
+      name: "Blefaroplastia (párpados)"
+      price_approx: 4000000
+
+    - key: bichectomia
+      name: "Bichectomía"
+      price_approx: 3500000
+
+    # -- Medicina estética --
+    - key: botox
+      name: "Toxina botulínica (bótox)"
+      price_approx: 600000
+
+    - key: acido_hialuronico
+      name: "Ácido hialurónico (rellenos)"
+      price_approx: 900000
+
+    - key: laser
+      name: "Depilación láser"
+      price_approx: 80000
+      unit: sesion                   # por zona/sesión, NO precio total
 
   valoracion:
     name: "Cita de valoración"
-    # RESUELTO: la valoración cuesta $500 y es REEMBOLSABLE — se descuenta
-    # del tratamiento si el paciente lo toma. Esa es la línea de cierre más
-    # fuerte que tiene Sofía: no es un gasto, es un anticipo.
-    # Sofía SIEMPRE dice el costo y el reembolso en la misma frase, y SIEMPRE
-    # antes de buscar horarios. Nadie se entera del precio después de apartar.
-    # (Nota: no confundir con "ortodoncia ~$500 mensuales" — son dos cosas.)
-    price_approx: 500
+    # La valoración cuesta $80.000 y es REEMBOLSABLE — se descuenta del
+    # procedimiento si la persona lo realiza. Es la línea de cierre más fuerte
+    # de Sofía: no es un gasto, es un anticipo. SIEMPRE dice costo y reembolso
+    # en la misma frase, y SIEMPRE antes de buscar horarios.
+    price_approx: 80000
     refundable: true
-    refund_note: "Se descuenta del tratamiento si el paciente lo toma"
+    refund_note: "Se descuenta del procedimiento si la persona lo realiza"
 
 # -------------------------------------------------------------
 # CRM — mapeo a GoHighLevel
