@@ -1,0 +1,56 @@
+<!-- ══════════════════════════════════════════════════════════════════════════
+     BOTÓN "HABLA CON SOFÍA" (llamada de voz por el navegador, Retell)
+     Pega TODO este bloque en un elemento de "Código personalizado / HTML" de GHL,
+     donde quieras que aparezca el botón. Es autocontenido: trae su estilo y su
+     lógica. El token lo genera nuestro servidor; la API key de Retell nunca toca
+     la página.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div style="text-align:center;margin:20px 0">
+  <button id="sofia-voz" type="button" style="
+      display:inline-flex;align-items:center;gap:10px;cursor:pointer;
+      font-family:inherit;font-size:17px;font-weight:600;color:#fff;
+      background:#0070F3;border:none;border-radius:9px;padding:16px 30px;
+      box-shadow:0 8px 20px -8px rgba(0,112,243,.55);transition:transform .15s ease,background .15s ease">
+    <span id="sofia-dot" style="display:none;width:9px;height:9px;border-radius:50%;background:#fff"></span>
+    <span aria-hidden="true">🎙️</span>
+    <span id="sofia-label">Habla con Sofía ahora mismo</span>
+  </button>
+  <div id="sofia-cap" style="margin-top:9px;font-size:13.5px;color:#64748B;font-family:inherit">
+    Sin marcar ni instalar nada. Le hablas desde aquí.
+  </div>
+</div>
+
+<script type="module">
+  const TOKEN_URL = "https://whatsapp-saas-chi-nine.vercel.app/api/web-call";
+  const btn = document.getElementById("sofia-voz");
+  const label = document.getElementById("sofia-label");
+  const cap = document.getElementById("sofia-cap");
+  const dot = document.getElementById("sofia-dot");
+  const T = { label: label.textContent, cap: cap.textContent };
+  let client = null, estado = "idle";
+
+  const reset = () => { estado="idle"; btn.disabled=false; btn.style.background="#0070F3"; dot.style.display="none";
+                        label.textContent=T.label; cap.textContent=T.cap; };
+  async function iniciar(){
+    estado="connecting"; btn.disabled=true; label.textContent="Conectando…";
+    cap.textContent="Permite el micrófono cuando el navegador lo pida.";
+    try{
+      const [{ RetellWebClient }, res] = await Promise.all([
+        import("https://esm.sh/retell-client-js-sdk@2"),
+        fetch(TOKEN_URL, { method:"POST" }),
+      ]);
+      if(!res.ok) throw new Error("token");
+      const { accessToken } = await res.json();
+      if(!accessToken) throw new Error("token");
+      client = new RetellWebClient();
+      client.on("call_started", ()=>{ estado="live"; btn.disabled=false; btn.style.background="#16A34A"; dot.style.display="inline-block";
+        label.textContent="En llamada · toca para colgar"; cap.textContent="Sofía te está escuchando. Háblale con naturalidad."; });
+      client.on("agent_start_talking", ()=>{ if(estado==="live") cap.textContent="Sofía está hablando…"; });
+      client.on("agent_stop_talking", ()=>{ if(estado==="live") cap.textContent="Te escucha. Habla cuando quieras."; });
+      client.on("call_ended", reset);
+      client.on("error", ()=>{ try{client.stopCall();}catch(e){} reset(); cap.textContent="La llamada se cortó. Intenta de nuevo o escríbenos por WhatsApp."; });
+      await client.startCall({ accessToken });
+    }catch(e){ reset(); cap.textContent="No se pudo iniciar la llamada. Revisa el micrófono o escríbenos por WhatsApp."; }
+  }
+  btn.addEventListener("click", ()=>{ if(estado==="live"){ try{client&&client.stopCall();}catch(e){} reset(); return; } if(estado==="idle") iniciar(); });
+</script>
