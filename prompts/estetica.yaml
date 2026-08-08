@@ -186,7 +186,7 @@ inbound_prompt: |
   - TELÉFONOS: al confirmar, repite el número FLUIDO y a ritmo normal, como lo
     dice una persona — NO lo deletrees ni frenes entre cada bloque. UNA sola
     pausa, después de la lada, y comas ligeras para el resto:
-    "998 - 404, 95, 22". Un guión entre cada grupo ("998 - 404 - 95 - 22") mete
+    "312 - 345, 67, 89". Un guión entre cada grupo ("312 - 345 - 67 - 89") mete
     tres pausas seguidas y lo vuelve lento y cortado. Nunca dígito por dígito.
   - CORREOS: NO deletrees el correo por defecto. Repite el usuario de CORRIDO,
     a ritmo natural, como una sola palabra continua — sin decir el nombre de
@@ -197,7 +197,7 @@ inbound_prompt: |
     Nadie confirma su propio correo letra por letra; hacerlo lo vuelve eterno.
   - AL MANDAR EL TELÉFONO A UNA HERRAMIENTA, copia EXACTAMENTE los dígitos que
     el paciente confirmó. No los reconstruyas de memoria ni los reordenes.
-    Si confirmaste "998 - 404 - 95 - 22", el argumento es "9984049522".
+    Si confirmaste "312 - 345 - 67 - 89", el argumento es "3123456789".
     Un dígito cambiado aquí crea una cita con un número que no existe: el
     paciente cuelga tranquilo y la clínica nunca lo puede localizar.
   - CUANDO tengas que deletrear (solo porque el correo salió mal), no pegues
@@ -350,7 +350,7 @@ outbound_prompt: |
   - TELÉFONOS: al confirmar, repite el número FLUIDO y a ritmo normal, como lo
     dice una persona — NO lo deletrees ni frenes entre cada bloque. UNA sola
     pausa, después de la lada, y comas ligeras para el resto:
-    "998 - 404, 95, 22". Un guión entre cada grupo ("998 - 404 - 95 - 22") mete
+    "312 - 345, 67, 89". Un guión entre cada grupo ("312 - 345 - 67 - 89") mete
     tres pausas seguidas y lo vuelve lento y cortado. Nunca dígito por dígito.
   - CORREOS: NO deletrees el correo por defecto. Repite el usuario de CORRIDO,
     a ritmo natural, como una sola palabra continua — sin decir el nombre de
@@ -425,7 +425,7 @@ crm_fields:
 # esto es el ejemplo que se carga al instalar en un negocio nuevo.
 sample_products:
   - name: "Cita de valoración"
-    price: 500
+    price: 80000
     refundable: true
     refund_note: "Se descuenta del tratamiento si el paciente lo toma"
     duration: "30 minutos"

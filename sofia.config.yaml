@@ -219,6 +219,12 @@ knowledge_base:
       price_approx: 80000
       unit: sesion                   # por zona/sesión, NO precio total
 
+    - key: limpieza_facial
+      name: "Limpieza facial profunda"
+      price_approx: 150000
+    # (También ofrecemos acompañamiento en nutrición; se cotiza en la valoración,
+    #  por eso no va en el catálogo con precio.)
+
   valoracion:
     name: "Cita de valoración"
     # La valoración cuesta $80.000 y es REEMBOLSABLE — se descuenta del
