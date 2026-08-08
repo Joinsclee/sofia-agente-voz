@@ -168,6 +168,8 @@ def _prompt_context() -> dict[str, str]:
 
     context = {
         "business.name": business.get("name"),
+        "business.address": business.get("address"),
+        "business.google_maps": business.get("google_maps"),
         "business.hours": config_value("business.hours"),
         "business.website": business.get("website"),
         "business.timezone": business.get("timezone"),
