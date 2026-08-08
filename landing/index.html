@@ -71,10 +71,22 @@ p:last-child{margin-bottom:0}
 .try-card{background:var(--white);border:2px solid var(--coral);border-radius:10px;padding:30px 26px;text-align:center;text-decoration:none;color:var(--text);display:block;transition:transform .18s ease}
 .try-card:hover{transform:translateY(-2px)}
 .try-card .ico{font-size:30px;display:block;margin-bottom:10px}
-.try-card .big{font-family:var(--mono);font-size:clamp(19px,2.6vw,27px);font-weight:500;color:var(--coral);letter-spacing:-.01em;word-break:break-word}
-.try-card .cap{font-size:13px;color:var(--text-3);margin-top:8px}
+.try-card .big{display:block;font-family:var(--mono);font-size:clamp(20px,2.7vw,27px);font-weight:600;color:var(--coral);letter-spacing:-.01em;word-break:break-word;line-height:1.15}
+.try-card .cap{display:block;font-size:13.5px;color:var(--text-3);margin-top:9px;line-height:1.5}
 .pending{border-style:dashed;border-color:var(--text-3);opacity:.85}
 .pending .big{color:var(--text-2)}
+/* botón de llamada web: hereda el look de try-card pero es un <button> */
+button.try-card{width:100%;font-family:inherit;background:var(--white)}
+button.try-card:disabled{cursor:progress}
+/* en llamada: el punto que respira, el detalle que dice "está vivo" */
+.try-card.live{border-color:var(--success)}
+.try-card.live .ico{color:var(--success)}
+.try-card.live .big{color:var(--success)}
+.wc-dot{display:none;width:9px;height:9px;border-radius:50%;background:var(--success);margin:0 auto 10px}
+.try-card.live .wc-dot{display:block;animation:wcpulse 1.4s var(--ease-in-out) infinite}
+.try-card.live .ico{display:none}
+@keyframes wcpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+@media (prefers-reduced-motion: reduce){.try-card.live .wc-dot{animation:none}}
 
 /* diagnostico */
 .steps{display:grid;gap:14px;margin:30px 0}
@@ -307,14 +319,15 @@ footer{background:var(--dark);color:#94A3B8;padding:36px 0 44px;font-size:13px;l
     <div class="try-grid">
       <a class="try-card" href="https://wa.me/12052827650?text=Hola%2C%20quiero%20informaci%C3%B3n%20y%20agendar%20una%20cita%20de%20valoraci%C3%B3n." target="_blank" rel="noopener">
         <svg class="ico" aria-hidden="true"><use href="#i-whatsapp"/></svg>
-        <span class="big">Escríbale por WhatsApp</span>
-        <span class="cap">Se abre el chat con un mensaje listo. Responde en segundos.</span>
+        <span class="big">Escríbele por WhatsApp</span>
+        <span class="cap">Se abre el chat y responde en segundos.</span>
       </a>
-      <a class="try-card" href="tel:+14246781756">
+      <button class="try-card" id="webcall" type="button" aria-live="polite">
+        <span class="wc-dot" aria-hidden="true"></span>
         <svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg>
-        <span class="big">+1 424 678 1756</span>
-        <span class="cap">Llame y hable con el agente de voz</span>
-      </a>
+        <span class="big" data-wc-title>Habla con ella ahora mismo</span>
+        <span class="cap" data-wc-cap>Sin marcar ni instalar nada. Le hablas desde aquí.</span>
+      </button>
     </div>
     <p class="fineprint">Si el agente se equivoca en algo, cuéntenoslo. Preferimos que lo descubra ahora y no después de firmar.</p>
   </div>
@@ -665,6 +678,61 @@ footer{background:var(--dark);color:#94A3B8;padding:36px 0 44px;font-size:13px;l
     obs.observe(chat);
   });
 })();
+</script>
+
+<!-- ── Llamada web con Sofía (Retell) ───────────────────────────────────────
+     El visitante habla con el agente de voz desde el navegador, por WebRTC,
+     sin marcar. El token se pide a nuestro backend (la API key de Retell nunca
+     toca la página); el SDK de Retell abre el audio. Si algo falla, el botón
+     lo dice y siempre queda la opción de WhatsApp al lado. -->
+<script type="module">
+  const TOKEN_URL = "https://whatsapp-saas-chi-nine.vercel.app/api/web-call";
+  const btn = document.getElementById("webcall");
+  if (btn) {
+    const titleEl = btn.querySelector("[data-wc-title]");
+    const capEl = btn.querySelector("[data-wc-cap]");
+    const t0 = { title: titleEl.textContent, cap: capEl.textContent };
+    let client = null, estado = "idle";
+
+    const set = (title, cap) => { titleEl.textContent = title; if (cap != null) capEl.textContent = cap; };
+    const reset = () => { estado = "idle"; btn.classList.remove("live"); btn.disabled = false; set(t0.title, t0.cap); };
+
+    async function iniciar() {
+      estado = "connecting";
+      btn.disabled = true;
+      set("Conectando…", "Permite el micrófono cuando el navegador lo pida.");
+      try {
+        // 1) SDK de Retell desde CDN (ESM), y 2) token desde nuestro backend.
+        const [{ RetellWebClient }, tokenRes] = await Promise.all([
+          import("https://esm.sh/retell-client-js-sdk@2"),
+          fetch(TOKEN_URL, { method: "POST" }),
+        ]);
+        if (!tokenRes.ok) throw new Error("token");
+        const { accessToken } = await tokenRes.json();
+        if (!accessToken) throw new Error("token");
+
+        client = new RetellWebClient();
+        client.on("call_started", () => {
+          estado = "live"; btn.disabled = false; btn.classList.add("live");
+          set("En llamada · toca para colgar", "Sofía te está escuchando. Háblale con naturalidad.");
+        });
+        client.on("agent_start_talking", () => { if (estado === "live") capEl.textContent = "Sofía está hablando…"; });
+        client.on("agent_stop_talking", () => { if (estado === "live") capEl.textContent = "Te escucha. Habla cuando quieras."; });
+        client.on("call_ended", reset);
+        client.on("error", () => { try { client.stopCall(); } catch (e) {} reset(); set(t0.title, "La llamada se cortó. Prueba de nuevo o escríbele por WhatsApp."); });
+
+        await client.startCall({ accessToken });
+      } catch (e) {
+        reset();
+        set(t0.title, "No se pudo iniciar la llamada. Revisa el micrófono o escríbele por WhatsApp.");
+      }
+    }
+
+    btn.addEventListener("click", () => {
+      if (estado === "live") { try { client && client.stopCall(); } catch (e) {} reset(); return; }
+      if (estado === "idle") iniciar();
+    });
+  }
 </script>
 </body>
 </html>
