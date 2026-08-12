@@ -352,6 +352,14 @@ acceso al sistema de citas: primero las manos, luego la voz.
 - **Importar el número ata solo el inbound.** El binding outbound es una escritura aparte
   sobre el mismo número (`bind_outbound_agent`). Sin ella el worker marca pero Retell no
   tiene agente que atender la llamada que acaba de colocar.
+- **El número queda CLAVADO a una versión del agente; publicar una nueva NO lo mueve.** El
+  binding de Retell guarda `agent_version` (p. ej. `inbound_agents=[{agent_id, agent_version: 3}]`).
+  `publish_agent_change`/`set_live_prompt` crean y publican v4, v5, … v7, pero el número
+  sigue hablando la v3 vieja: nada falla, el prompt en vivo se ve correcto en el LLM, y aun
+  así la llamada dice el nombre anterior. Tras publicar, hay que repuntar el número a la
+  última versión publicada — `phone_number.update(NUM, inbound_agents=[{agent_id, agent_version: N, weight: 1.0}])`
+  (el `weight` es obligatorio o Retell responde 400) — y lo mismo para `outbound_agents`.
+  Esto mordió en la conversión dental→estética: el saludo seguía diciendo "Sonrisa Perfecta".
 
 ### Del instalador (`scripts/setup.py`)
 

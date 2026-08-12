@@ -1121,6 +1121,38 @@ def _validate_conversation_fields(fields: Mapping[str, Any]) -> dict[str, Any]:
     return clean
 
 
+def _repoint_number_after_publish(agent_id: str, version: int) -> None:
+    """Point the phone number's binding at a freshly published agent version.
+
+    Retell's number binding stores an explicit ``agent_version``; publishing a
+    new version does NOT move it — the number keeps speaking the old one until
+    repointed. This updates the binding that matches the agent (inbound vs
+    outbound), leaving the other untouched. Best-effort: an unconfigured number
+    or a transient Retell error must never fail the publish it follows.
+
+    Without this, a panel edit publishes v5 but the inbound caller still hears
+    v4 (bug V07/V09 — the dental→estética "seguía diciendo Sonrisa Perfecta").
+    """
+    num = (os.environ.get("TWILIO_PHONE_NUMBER") or "").strip()
+    if not num:
+        return
+    inbound = (os.environ.get("RETELL_INBOUND_AGENT_ID") or "").strip()
+    outbound = (os.environ.get("RETELL_OUTBOUND_AGENT_ID") or "").strip()
+    if agent_id == inbound:
+        key = "inbound_agents"
+    elif agent_id == outbound:
+        key = "outbound_agents"
+    else:
+        return
+    try:
+        _client().phone_number.update(
+            num, **{key: [{"agent_id": agent_id, "agent_version": version, "weight": 1.0}]}
+        )
+        LOG.info("Repointed %s %s -> agent %s v%s", num, key, agent_id, version)
+    except Exception as exc:  # noqa: BLE001 — best-effort, never break a publish
+        LOG.warning("Could not repoint %s to v%s: %s", num, version, exc)
+
+
 def publish_agent_change(
     agent_id: str,
     *,
@@ -1174,6 +1206,10 @@ def publish_agent_change(
 
     # Publish makes the draft — agent and coupled LLM — the live version.
     _client().agent.publish(agent_id, version=draft_version)
+
+    # Publishing is necessary but NOT sufficient: repoint the phone number at the
+    # new version, or the inbound caller keeps hearing the old one (bug V07/V09).
+    _repoint_number_after_publish(agent_id, draft_version)
 
     LOG.info(
         "Published agent %s v%s (voice=%s llm=%s)",
