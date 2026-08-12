@@ -722,6 +722,31 @@ def book_or_reschedule(
     )
 
 
+def cancel_appointment(appointment_id: str) -> dict[str, Any]:
+    """PUT /calendars/events/appointments/{id} with appointmentStatus=cancelled.
+
+    Cancelling (not deleting) frees the slot while keeping the record, so the
+    clinic still sees the patient had a cancelled appointment. Raises
+    GHLBookingError if it did not land — Sofía must NOT tell the patient it was
+    cancelled if GHL refused.
+    """
+    if not appointment_id:
+        raise ValueError("appointment_id is required to cancel")
+    try:
+        _request(
+            "PUT",
+            f"/calendars/events/appointments/{appointment_id}",
+            json={"appointmentStatus": "cancelled"},
+        )
+    except GHLError as exc:
+        raise GHLBookingError(
+            f"Could not cancel appointment {appointment_id}: {exc}. "
+            "Do not confirm the cancellation — offer human follow-up."
+        ) from exc
+    LOG.info("Appointment %s cancelled", appointment_id)
+    return {"id": appointment_id, "status": "cancelled"}
+
+
 # ==========================================================================
 # 4. create_opportunity
 # ==========================================================================

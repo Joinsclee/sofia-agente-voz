@@ -240,6 +240,21 @@ class UpdateLeadStatusRequest(RetellToolRequest):
     opportunity_name: str | None = None
 
 
+class GetAppointmentRequest(RetellToolRequest):
+    phone: str | None = None
+
+
+class CancelAppointmentRequest(RetellToolRequest):
+    phone: str | None = None
+
+
+class RescheduleAppointmentRequest(RetellToolRequest):
+    phone: str | None = None
+    new_start_time: str = Field(
+        description="El `iso` del nuevo horario, copiado tal cual de check_availability."
+    )
+
+
 # --------------------------------------------------------------------------
 # Phone number of record — the one write path that must never be corrupted
 # --------------------------------------------------------------------------
@@ -703,6 +718,85 @@ async def book_appointment(payload: BookAppointmentRequest) -> JSONResponse:
             "warnings": warnings,
         },
         message="Tu cita quedó agendada.",
+    )
+
+
+# ==========================================================================
+# POST /get-appointment · /cancel-appointment · /reschedule-appointment
+#
+# The caller is identified by their LINE of record (phone_of_record), never by
+# a number the model transcribed — so nobody can touch someone else's cita.
+# ==========================================================================
+
+
+def _resolve_caller_contact(payload: RetellToolRequest, spoken_phone: str | None) -> str:
+    """The caller's contact id, from the line of record (anti-phantom)."""
+    phone, _ = phone_of_record(payload, spoken_phone)
+    return ghl.upsert_contact(phone=phone)["id"]
+
+
+@web_app.post("/get-appointment")
+async def get_appointment(payload: GetAppointmentRequest) -> JSONResponse:
+    """Finds the caller's upcoming appointment so Sofía can read it back."""
+    contact_id = _resolve_caller_contact(payload, payload.phone)
+    appt = ghl.find_future_appointment(contact_id)
+    if not appt:
+        return ok(
+            {"has_appointment": False, "contact_id": contact_id},
+            message="No encontré una cita próxima a tu nombre.",
+        )
+    label = _spoken_label(appt["start"], datetime.now(_business_tz()))
+    return ok(
+        {
+            "has_appointment": True,
+            "appointment_id": appt["id"],
+            "start_time": appt["start"].isoformat(),
+            "label": label,
+            "contact_id": contact_id,
+        },
+        message="Encontré tu cita.",
+    )
+
+
+@web_app.post("/cancel-appointment")
+async def cancel_appointment(payload: CancelAppointmentRequest) -> JSONResponse:
+    """Cancels the caller's upcoming appointment. Frees the slot; keeps the record.
+
+    GHLBookingError propagates to the GHLError handler, so a failed cancel is
+    reported honestly and Sofía never says "quedó cancelada" when it did not.
+    """
+    contact_id = _resolve_caller_contact(payload, payload.phone)
+    appt = ghl.find_future_appointment(contact_id)
+    if not appt:
+        return ok(
+            {"cancelled": False, "has_appointment": False},
+            message="No encontré una cita próxima a tu nombre para cancelar.",
+        )
+    label = _spoken_label(appt["start"], datetime.now(_business_tz()))
+    ghl.cancel_appointment(appt["id"])
+    return ok(
+        {"cancelled": True, "appointment_id": appt["id"], "label": label},
+        message="Tu cita quedó cancelada.",
+    )
+
+
+@web_app.post("/reschedule-appointment")
+async def reschedule_appointment(payload: RescheduleAppointmentRequest) -> JSONResponse:
+    """Moves the caller's upcoming appointment to a new time from check_availability."""
+    contact_id = _resolve_caller_contact(payload, payload.phone)
+    appt = ghl.find_future_appointment(contact_id)
+    if not appt:
+        return ok(
+            {"rescheduled": False, "has_appointment": False},
+            message="No encontré una cita próxima a tu nombre para cambiar.",
+        )
+    moved = ghl.reschedule_appointment(appt["id"], payload.new_start_time)
+    label = _spoken_label(
+        datetime.fromisoformat(moved["start_time"]), datetime.now(_business_tz())
+    )
+    return ok(
+        {"rescheduled": True, "appointment_id": appt["id"], "label": label},
+        message="Tu cita quedó reprogramada.",
     )
 
 

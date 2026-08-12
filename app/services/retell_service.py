@@ -406,6 +406,65 @@ def build_custom_functions(base_url: str | None = None) -> list[dict[str, Any]]:
             },
         },
         {
+            "type": "custom",
+            "name": "get_appointment",
+            "description": (
+                "Consulta la cita próxima del paciente que está llamando (se identifica por su "
+                "número, NO pidas 'código de reserva'). Úsala cuando pregunte por su cita, o antes "
+                "de cancelarla o cambiarla. Devuelve `has_appointment` y `label` (la fecha y hora "
+                "en palabras, dila tal cual)."
+            ),
+            "url": f"{url}/get-appointment",
+            "speak_during_execution": True,
+            "speak_after_execution": True,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "phone": {"type": "string", "description": "Teléfono del paciente si lo tienes; si no, se usa el de la llamada."},
+                },
+                "required": [],
+            },
+        },
+        {
+            "type": "custom",
+            "name": "cancel_appointment",
+            "description": (
+                "Cancela la cita próxima del paciente que llama. Úsala SOLO cuando pida CANCELAR y "
+                "lo confirme. Devuelve `cancelled` y `label`. Si devuelve error o no confirma, NO "
+                "digas que quedó cancelada: ofrece seguimiento humano."
+            ),
+            "url": f"{url}/cancel-appointment",
+            "speak_during_execution": True,
+            "speak_after_execution": True,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "phone": {"type": "string", "description": "Teléfono del paciente si lo tienes."},
+                },
+                "required": [],
+            },
+        },
+        {
+            "type": "custom",
+            "name": "reschedule_appointment",
+            "description": (
+                "Cambia (reprograma) la cita próxima del paciente a un horario nuevo. Primero usa "
+                "check_availability para ofrecerle horarios reales; cuando elija, pasa su `iso` en "
+                "`new_start_time`. Devuelve `rescheduled` y `label`. Si falla, no confirmes el cambio."
+            ),
+            "url": f"{url}/reschedule-appointment",
+            "speak_during_execution": True,
+            "speak_after_execution": True,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "phone": {"type": "string", "description": "Teléfono del paciente si lo tienes."},
+                    "new_start_time": {"type": "string", "description": "El `iso` del nuevo horario elegido, copiado de check_availability."},
+                },
+                "required": ["new_start_time"],
+            },
+        },
+        {
             # Built-in, no URL. Without this Sofía physically cannot hang up.
             "type": "end_call",
             "name": "end_call",
