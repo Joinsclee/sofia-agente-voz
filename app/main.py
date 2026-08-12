@@ -637,8 +637,12 @@ async def book_appointment(payload: BookAppointmentRequest) -> JSONResponse:
             LOG.warning("Could not set temperature on contact %s: %s", contact["id"], exc)
 
     # --- Step 2: the appointment. This is the promise. It either lands or we say so. ---
+    # book_or_reschedule guards against the model calling this twice in one turn
+    # (it books, the patient gives their name, and it "completes" the booking
+    # again): it reuses the patient's OWN future appointment — same time keeps it,
+    # different time moves it — instead of creating a second or colliding with it.
     duration = payload.duration_minutes or ghl.DEFAULT_APPOINTMENT_MINUTES
-    appointment = ghl.book_appointment(
+    appointment = ghl.book_or_reschedule(
         contact_id=contact["id"],
         start=payload.start_time,
         duration_minutes=duration,
@@ -676,6 +680,14 @@ async def book_appointment(payload: BookAppointmentRequest) -> JSONResponse:
         appointment["start_time"],
         warnings,
     )
+    # If the contact already had this exact appointment (double-call) or we moved
+    # an existing one, tell the model so it does not announce a second booking.
+    nota = None
+    if appointment.get("already_booked"):
+        nota = "Este contacto YA tenía esta cita a esta misma hora. NO la anuncies otra vez ni pidas disculpas: confírmala tal cual y seguí."
+    elif appointment.get("rescheduled"):
+        nota = "El contacto ya tenía una cita y la MOVISTE a la hora nueva (no creaste una segunda). Confírmale el nuevo horario una sola vez."
+
     return ok(
         {
             "contact_id": contact["id"],
@@ -685,6 +697,9 @@ async def book_appointment(payload: BookAppointmentRequest) -> JSONResponse:
             "end_time": appointment["end_time"],
             "status": appointment["status"],
             "urgency": payload.urgency,
+            "already_booked": bool(appointment.get("already_booked")),
+            "rescheduled": bool(appointment.get("rescheduled")),
+            "nota": nota,
             "warnings": warnings,
         },
         message="Tu cita quedó agendada.",

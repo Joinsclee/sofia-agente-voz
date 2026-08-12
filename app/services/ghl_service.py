@@ -593,6 +593,135 @@ def book_appointment(
     }
 
 
+def find_future_appointment(
+    contact_id: str,
+    calendar_id: str | None = None,
+    *,
+    moment: datetime | None = None,
+) -> dict[str, Any] | None:
+    """The contact's next FUTURE, non-cancelled appointment on this calendar, or None.
+
+    Guards double-booking: the model sometimes calls the booking tool twice in
+    one turn (it books, the patient gives their name, and it 'completes' the
+    booking again). Fails OPEN — a read error returns None and the booking
+    proceeds, because losing the patient over a failed lookup is worse than the
+    rare duplicate this prevents.
+    """
+    if not contact_id:
+        return None
+    reference = moment or datetime.now(tz=_business_timezone())
+    cal = calendar_id or _default_calendar_id()
+    try:
+        events = get_contact_appointments(contact_id)
+    except (GHLError, ValueError) as exc:
+        LOG.warning("Could not read appointments for %s: %s", contact_id, exc)
+        return None
+
+    future: list[tuple[datetime, dict[str, Any]]] = []
+    for event in events:
+        raw = event.get("startTime") or event.get("start_time")
+        status = str(event.get("appointmentStatus") or event.get("status") or "").lower()
+        evt_cal = event.get("calendarId") or event.get("calendar_id")
+        if not raw or status == "cancelled":
+            continue
+        if evt_cal and cal and evt_cal != cal:
+            continue
+        try:
+            start = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=_business_timezone())
+        if start >= reference:
+            future.append((start, event))
+
+    if not future:
+        return None
+    start, event = min(future, key=lambda pair: pair[0])
+    appt_id = event.get("id")
+    return {"id": appt_id, "start": start} if appt_id else None
+
+
+def reschedule_appointment(
+    appointment_id: str,
+    start: str | datetime,
+    *,
+    duration_minutes: int = DEFAULT_APPOINTMENT_MINUTES,
+) -> dict[str, Any]:
+    """PUT /calendars/events/appointments/{id} — move an existing appointment in place.
+
+    Same offset discipline as book_appointment (never bare UTC). Raises
+    GHLBookingError if the move did not land, so the caller never confirms a
+    reschedule that failed.
+    """
+    if not appointment_id:
+        raise ValueError("appointment_id is required to reschedule")
+    start_iso = _to_offset_iso(start)
+    start_dt = datetime.fromisoformat(start_iso)
+    end_iso = (start_dt + timedelta(minutes=duration_minutes)).isoformat()
+    try:
+        _request(
+            "PUT",
+            f"/calendars/events/appointments/{appointment_id}",
+            json={"startTime": start_iso, "endTime": end_iso},
+        )
+    except GHLError as exc:
+        raise GHLBookingError(
+            f"Could not reschedule appointment {appointment_id} to {start_iso}: {exc}. "
+            "Do not confirm the change — offer human follow-up."
+        ) from exc
+    LOG.info("Appointment %s rescheduled to %s", appointment_id, start_iso)
+    return {"id": appointment_id, "start_time": start_iso, "end_time": end_iso, "status": "confirmed"}
+
+
+def book_or_reschedule(
+    contact_id: str,
+    start: str | datetime,
+    *,
+    duration_minutes: int = DEFAULT_APPOINTMENT_MINUTES,
+    calendar_id: str | None = None,
+    title: str | None = None,
+) -> dict[str, Any]:
+    """Book the valoración, but NEVER double-book the same contact.
+
+    A plain POST when the model calls booking twice either creates a SECOND
+    appointment or 400s with 'slot no longer available' against the patient's
+    OWN first one — which reads as a clinic whose calendar fills up while you
+    speak. So:
+      - existing future appointment at the SAME time  -> return it, don't re-create
+      - existing future appointment at a DIFFERENT time -> move it (reschedule)
+      - none -> book normally
+    Mirrors the WhatsApp agent's guard.
+    """
+    start_iso = _to_offset_iso(start)
+    target = datetime.fromisoformat(start_iso)
+    existing = find_future_appointment(contact_id, calendar_id)
+    if existing:
+        if abs((existing["start"] - target).total_seconds()) < 60:
+            LOG.info("Contact %s already has this appointment %s; not re-creating", contact_id, existing["id"])
+            end_iso = (target + timedelta(minutes=duration_minutes)).isoformat()
+            return {
+                "id": existing["id"],
+                "contact_id": contact_id,
+                "calendar_id": calendar_id or _default_calendar_id(),
+                "start_time": start_iso,
+                "end_time": end_iso,
+                "status": "confirmed",
+                "already_booked": True,
+            }
+        LOG.info("Contact %s has appointment %s at another time; rescheduling to %s", contact_id, existing["id"], start_iso)
+        moved = reschedule_appointment(existing["id"], start, duration_minutes=duration_minutes)
+        moved.update({"contact_id": contact_id, "rescheduled": True})
+        return moved
+    return book_appointment(
+        contact_id=contact_id,
+        start=start,
+        duration_minutes=duration_minutes,
+        calendar_id=calendar_id,
+        title=title,
+    )
+
+
 # ==========================================================================
 # 4. create_opportunity
 # ==========================================================================
