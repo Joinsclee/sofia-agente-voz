@@ -68,3 +68,6 @@ scripts/demo_intro.py
 # INSTALAR.md está escrito para que un alumno lo clone y lo instale. Si esta
 # carpeta entra, esa investigación viaja con cada copia.
 Documentación/
+
+# Test/demo recordings — never commit (large binaries)
+*.mp4
