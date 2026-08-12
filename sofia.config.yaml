@@ -268,7 +268,7 @@ crm:
   # OJO con la deuda consciente: este calendario es de consultorías de la agencia,
   # no una agenda dental. Las "citas de valoración" de Sofía caen ahí mezcladas
   # con las consultorías reales. Sirve para probar; separarlo antes de producción.
-  calendar_id: "5cZiNfL2nv2dYORwMxlK"        # "Consultoría Implementación de Funnels y CRM"
+  calendar_id: "VduJfmUeRNfiiTdb6HQW"        # "Calendario DEMO Clínicas"
 
   # "1. Funnel Agendamiento (Sistema de Ventas Funnels & CRM)" — releído 2026-08-04.
   # Se eligió entre los 6 pipelines de la Location porque es el único cuyas etapas
