@@ -360,7 +360,9 @@ def _to_offset_iso(value: str | datetime) -> str:
     return stamped
 
 
-def _custom_fields_payload(custom_fields: Mapping[str, Any] | None) -> list[dict[str, Any]]:
+def _custom_fields_payload(
+    custom_fields: Mapping[str, Any] | None, *, strict: bool = True
+) -> list[dict[str, Any]]:
     """Translate {fieldKey: value} into GHL's [{id, value}] shape.
 
     GHL addresses custom fields by **id**. The `{key, field_value}` shape that
@@ -368,6 +370,11 @@ def _custom_fields_payload(custom_fields: Mapping[str, Any] | None) -> list[dict
     no error, no field written. Verified against both /contacts/upsert and
     PUT /contacts/{id}. Resolving ids from the Location is the only shape that
     actually persists.
+
+    `strict` (default) raises on any key the Location does not define — right
+    when a write must not half-succeed. `strict=False` drops the unknown keys
+    with a warning and writes the rest, so an independent batch (e.g. the
+    post-call scores) degrades one field instead of losing all of them.
     """
     if not custom_fields:
         return []
@@ -386,7 +393,9 @@ def _custom_fields_payload(custom_fields: Mapping[str, Any] | None) -> list[dict
             unknown.append(key)
 
     if unknown:
-        raise GHLError(f"Custom field key(s) not found in the Location: {sorted(unknown)}")
+        if strict:
+            raise GHLError(f"Custom field key(s) not found in the Location: {sorted(unknown)}")
+        LOG.warning("Skipping custom field key(s) not defined in the Location: %s", sorted(unknown))
     return payload
 
 
@@ -1086,14 +1095,20 @@ def custom_field_ids() -> dict[str, str]:
 
 
 # Writes the post-call scores onto the patient's file so the clinic can triage by them.
-def update_contact_fields(contact_id: str, custom_fields: Mapping[str, Any]) -> dict[str, Any]:
-    """PUT /contacts/{contactId} — sets custom fields addressed by id."""
+def update_contact_fields(
+    contact_id: str, custom_fields: Mapping[str, Any], *, strict: bool = True
+) -> dict[str, Any]:
+    """PUT /contacts/{contactId} — sets custom fields addressed by id.
+
+    `strict=False` writes the keys the Location knows and skips the rest with a
+    warning, instead of dropping the whole batch when one key was renamed.
+    """
     if not contact_id:
         raise ValueError("contact_id is required to update fields")
 
-    # Raises loudly if a key does not exist in the Location — otherwise GHL
-    # would drop it with a cheerful 200 and nobody would notice.
-    payload = _custom_fields_payload(custom_fields)
+    # Strict by default: raises if a key does not exist in the Location —
+    # otherwise GHL would drop it with a cheerful 200 and nobody would notice.
+    payload = _custom_fields_payload(custom_fields, strict=strict)
     if not payload:
         raise ValueError("no custom fields to write")
 

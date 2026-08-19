@@ -141,13 +141,23 @@ def _parse_attempts(contact: dict[str, Any], fields: dict[str, Any]) -> int:
 
 def _parse_last_attempt(fields: dict[str, Any]) -> datetime | None:
     raw = fields.get(_cfg("tracking_fields.last_attempt", "contact.ultimo_intento_outbound"))
-    if not raw:
+    if raw in (None, ""):
         return None
+    # GHL DATE fields round-trip as epoch milliseconds; also tolerate an epoch in
+    # seconds and an older ISO string, so a value written before this fix — or in
+    # a slightly different shape — still parses instead of silently disabling the
+    # cooldown (which would re-dial the same lead every run).
     try:
-        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return parsed.replace(tzinfo=_timezone()) if parsed.tzinfo is None else parsed
+        epoch = float(raw)
+    except (TypeError, ValueError):
+        try:
+            parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed.replace(tzinfo=_timezone()) if parsed.tzinfo is None else parsed
+    if abs(epoch) >= 1e11:  # milliseconds, not seconds
+        epoch /= 1000.0
+    return datetime.fromtimestamp(epoch, tz=_timezone())
 
 
 def _contact_details(contact_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -346,8 +356,14 @@ def record_attempt(lead: Lead) -> None:
     that connected and went badly still counts. If this write fails the lead
     gets dialled again next hour, so it fails loudly.
     """
+    # last_attempt is a GHL DATE field: write epoch milliseconds, the shape it
+    # reliably accepts and returns. An offset-datetime string can be rejected —
+    # which would fail the whole write and lose the attempt counter too, so the
+    # lead gets re-dialled every run. _parse_last_attempt reads this back.
     fields = {
-        _cfg("tracking_fields.last_attempt", "contact.ultimo_intento_outbound"): now_local().isoformat(),
+        _cfg("tracking_fields.last_attempt", "contact.ultimo_intento_outbound"): int(
+            now_local().timestamp() * 1000
+        ),
         _cfg("tracking_fields.attempts", "contact.intentos_outbound"): lead.attempts + 1,
     }
     try:

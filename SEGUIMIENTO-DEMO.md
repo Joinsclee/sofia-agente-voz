@@ -20,6 +20,15 @@ Backend redeployado en Modal (`agente-voz-ghl` + `-worker`, cuenta dineroconscie
 2. **Contacto fantasma:** `_resolve_caller_contact` hacía `upsert` (escritura) para identificar a quien llama → creaba un contacto vacío si no existía. Ahora usa `ghl_read.find_contact_by_phone` (solo lectura) y devuelve `str | None`.
 3. **Repoint silencioso:** si faltaba `TWILIO_PHONE_NUMBER`, el número no se repuntaba **sin avisar** (bug V07/V09). Ahora emite `LOG.warning` explícito.
 
+## Auditoría del backend — 2º pase (outbound + post-llamada + dashboard) — FIXES aplicados
+Segundo agente de auditoría sobre las superficies que el 1º no cubrió. Confirmó OK: auth del panel (token constant-time, ninguna ruta se salta el check), streaming de grabación tras token, publish→repoint, análisis Anthropic (parse robusto), `prompt_history` en `modal.Dict`, imagen de Modal (config+prompts añadidos, sufijo `::modal_app`, worker aparte). Hallazgos corregidos + redeploy + 10 tests de regresión (`tests/test_post_call_resolve.py`):
+1. **[HIGH] Contacto equivocado en el análisis post-llamada (outbound / línea de desvío).** `_resolve_contact_id` caía a `from_number` = el número **propio de la clínica** en outbound → escribía el resumen/score en un contacto basura y el paciente real se quedaba sin nada. Ahora usa `metadata.contact_id` (que el worker ya manda) y, si no, la **línea de registro** direccional/anti-desvío (`_line_number`) — el MISMO contacto que escribió el booking.
+2. **[HIGH, latente: outbound off] Cooldown del worker roto por el campo DATE.** `record_attempt` escribía ISO-con-offset en un campo **DATE** de GHL → podía rechazarse (perdía el contador → remarcaba cada hora) o volver como epoch-ms sin parsear. Ahora escribe **epoch-ms** y `_parse_last_attempt` tolera epoch-ms/segundos/ISO.
+3. **[LOW] Escritura de custom fields todo-o-nada.** Un key renombrado tiraba los 4 campos. Nuevo `strict=False` en `update_contact_fields`: degrada solo el campo faltante (como prometía el comentario).
+
+### PENDIENTE — decisión tuya (NO lo aplico: el panel está congelado a propósito en CLAUDE.md)
+- **[MEDIUM] El dashboard solo cuenta el agente inbound.** `_filter_criteria` filtra por `_inbound_agent_id()` → si activas outbound, esas llamadas y sus citas **no aparecen ni suman** en "total". No afecta al demo (outbound off). Si algún día activas outbound y quieres que el panel lo cuente, hay que incluir `_outbound_agent_id()` en el filtro — dime y lo hago.
+
 ## Llamadas reales a Sofía — 7 MEJORAS de conversación (prompt v17 inbound / v10 outbound, en vivo)
 Basadas en transcribir las llamadas reales (p. ej. call_04: correo dictado "después de la T va una H" que se guardó mal, teléfono repetido cortado, "Perfecto/Listo/Excelente" en cada turno).
 1. **Muletillas:** prohibido 3 turnos seguidos con "Perfecto/Listo/Excelente/Entiendo"; el arranque varía y dice algo real, no una muletilla hueca.

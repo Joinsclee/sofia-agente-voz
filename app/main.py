@@ -916,8 +916,31 @@ async def update_lead_status(payload: UpdateLeadStatusRequest) -> JSONResponse:
 
 
 def _resolve_contact_id(call: Mapping[str, Any]) -> str | None:
-    """Find the GHL contact this call belongs to, without any local state."""
-    phone = phone_from_tool_calls(call) or call.get("from_number")
+    """Find the GHL contact this call belongs to, without any local state.
+
+    Resolves to the SAME contact the in-call tools wrote to, mirroring
+    phone_of_record's line-of-record rules — never the clinic's own number:
+
+    1. Outbound calls carry the CRM contact id the worker dialled, echoed back
+       in Retell's `metadata`. Trust it directly (`from_number` here is the
+       clinic's Twilio line, not the patient).
+    2. Otherwise the telephony line the booking used — direction-aware and
+       forwarding-aware (`_line_number` returns None on a forwarding line, so a
+       switchboard caller ID never becomes a phantom contact).
+    3. Web/test calls with no PSTN leg: the phone Sofía passed to a tool, which
+       is exactly what phone_of_record fell back to when it created the contact.
+    """
+    meta = call.get("metadata")
+    if isinstance(meta, Mapping) and meta.get("contact_id"):
+        return str(meta["contact_id"])
+
+    req = RetellToolRequest(
+        call_id=call.get("call_id"),
+        from_number=call.get("from_number"),
+        to_number=call.get("to_number"),
+        direction=call.get("direction"),
+    )
+    phone = _line_number(req) or phone_from_tool_calls(call)
     if not phone:
         return None
     try:
@@ -969,9 +992,10 @@ def process_call_ended(call: Mapping[str, Any]) -> None:
 
     # --- The scores: each into its configured custom field. ---
     #
-    # Written one mapping at a time so a single missing field key degrades that
-    # field only. Note what is absent: contact.notas_clinicas. That field is the
-    # doctor's clinical record; model output never goes there.
+    # Written with strict=False so a single renamed/missing field key degrades
+    # that field only, not the whole batch. Note what is absent:
+    # contact.notas_clinicas. That field is the doctor's clinical record; model
+    # output never goes there.
     field_values = {
         "interes_score": analysis.interes_score,
         "nivel_urgencia": analysis.nivel_urgencia,
@@ -986,7 +1010,7 @@ def process_call_ended(call: Mapping[str, Any]) -> None:
 
     if custom_fields:
         try:
-            ghl.update_contact_fields(contact_id, custom_fields)
+            ghl.update_contact_fields(contact_id, custom_fields, strict=False)
         except (ghl.GHLError, ValueError) as exc:
             LOG.error("Could not write custom fields for call=%s: %s", call_id, exc)
 
