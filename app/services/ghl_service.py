@@ -639,7 +639,12 @@ def find_future_appointment(
         return None
     start, event = min(future, key=lambda pair: pair[0])
     appt_id = event.get("id")
-    return {"id": appt_id, "start": start} if appt_id else None
+    if not appt_id:
+        return None
+    # Normalise to the clinic's zone. GHL may answer /contacts/{id}/appointments
+    # in UTC (the Z handling above anticipates it); _spoken_label reads .hour raw,
+    # so without this Sofía could read "nueve de la noche" for a 4pm appointment.
+    return {"id": appt_id, "start": start.astimezone(_business_timezone())}
 
 
 def reschedule_appointment(
@@ -1165,7 +1170,7 @@ def last_appointment_before(contact_id: str, moment: datetime | None = None) -> 
     if not past:
         return None
     start, event = max(past, key=lambda pair: pair[0])
-    return {"start": start, "raw": event}
+    return {"start": start.astimezone(_business_timezone()), "raw": event}
 
 
 # Reads a business value from sofia.config.yaml — handlers need the spoken copy and the stage map.

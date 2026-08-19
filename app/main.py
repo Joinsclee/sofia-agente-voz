@@ -35,6 +35,7 @@ from app.auth import allowed_origins
 from app.dashboard_api import router as dashboard_router
 from app.services import anthropic_service
 from app.services import ghl_service as ghl
+from app.services import ghl_read_service as ghl_read
 from app.services.call_parsing import phone_from_tool_calls, transcript_from
 from app.services.ghl_service import (
     GHLAPIError,
@@ -729,10 +730,17 @@ async def book_appointment(payload: BookAppointmentRequest) -> JSONResponse:
 # ==========================================================================
 
 
-def _resolve_caller_contact(payload: RetellToolRequest, spoken_phone: str | None) -> str:
-    """The caller's contact id, from the line of record (anti-phantom)."""
+def _resolve_caller_contact(payload: RetellToolRequest, spoken_phone: str | None) -> str | None:
+    """The caller's contact id from their line of record, or None if not a patient.
+
+    A READ path: use a lookup that does NOT create. upsert_contact would mint a
+    phantom contact for every wrong number or spam caller asking "do I have an
+    appointment?". None flows through find_future_appointment -> "no appointment",
+    which is exactly right for a number the clinic never registered.
+    """
     phone, _ = phone_of_record(payload, spoken_phone)
-    return ghl.upsert_contact(phone=phone)["id"]
+    contact = ghl_read.find_contact_by_phone(phone)
+    return contact.get("id") if contact else None
 
 
 @web_app.post("/get-appointment")

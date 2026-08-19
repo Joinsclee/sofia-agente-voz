@@ -1194,6 +1194,12 @@ def _repoint_number_after_publish(agent_id: str, version: int) -> None:
     """
     num = (os.environ.get("TWILIO_PHONE_NUMBER") or "").strip()
     if not num:
+        LOG.warning(
+            "Published %s v%s but TWILIO_PHONE_NUMBER is unset — number NOT repointed "
+            "(the caller keeps the old version; bug V07/V09).",
+            agent_id,
+            version,
+        )
         return
     inbound = (os.environ.get("RETELL_INBOUND_AGENT_ID") or "").strip()
     outbound = (os.environ.get("RETELL_OUTBOUND_AGENT_ID") or "").strip()

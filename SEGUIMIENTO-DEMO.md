@@ -1,7 +1,7 @@
 # Seguimiento — Demo Clínica Estética Aurora (voz + WhatsApp)
 
 > Tracker del proyecto. (gbrain MCP desconectado en la sesión → seguimiento en este doc + todos.)
-> Última actualización a partir del análisis de `Agendamiento de citas con IA en WhatsApp.mp4`.
+> Última actualización: auditoría multi-agente del backend + análisis de las llamadas reales a Sofía.
 
 ## Estado general
 - **Voz (Retell + Modal en cuenta dineroconsciente):** agenda, consulta, cancela, reprograma. Voz Selena (colombiana). Verificado en vivo.
@@ -13,6 +13,22 @@
 1. **"No hay espacio" repetido:** en la llamada ofrecía día por día y rechazaba (jueves/viernes/lunes llenos) antes de encontrar hueco. Ahora, ante prisa/"lo más pronto posible", consulta un rango amplio y ofrece el **hueco más cercano directo**.
 2. **Sobre-promesa de ubicación:** decía "te llegará la ubicación por WhatsApp" (la llamada no manda un WhatsApp propio de Aurora). Ahora da la dirección de viva voz y **no promete** un mensaje.
 3. **Correo sin arroba:** aceptó "cristianfonseca.gmail.com" (sin @). Ahora reconstruye y confirma el arroba; nunca guarda un correo inválido.
+
+## Auditoría del backend (multi-agente) — FIXES DE CÓDIGO aplicados y desplegados
+Backend redeployado en Modal (`agente-voz-ghl` + `-worker`, cuenta dineroconsciente). Health `config_ok: true`.
+1. **BUG crítico de zona horaria (get/cancel/reprograma):** `find_future_appointment` y `last_appointment_before` devolvían el `start` sin normalizar → Sofía podía **decir la hora corrida** al consultar/cancelar. Ahora normalizan con `.astimezone(_business_timezone())` (+ guarda `None` si no hay contacto/cita).
+2. **Contacto fantasma:** `_resolve_caller_contact` hacía `upsert` (escritura) para identificar a quien llama → creaba un contacto vacío si no existía. Ahora usa `ghl_read.find_contact_by_phone` (solo lectura) y devuelve `str | None`.
+3. **Repoint silencioso:** si faltaba `TWILIO_PHONE_NUMBER`, el número no se repuntaba **sin avisar** (bug V07/V09). Ahora emite `LOG.warning` explícito.
+
+## Llamadas reales a Sofía — 7 MEJORAS de conversación (prompt v17 inbound / v10 outbound, en vivo)
+Basadas en transcribir las llamadas reales (p. ej. call_04: correo dictado "después de la T va una H" que se guardó mal, teléfono repetido cortado, "Perfecto/Listo/Excelente" en cada turno).
+1. **Muletillas:** prohibido 3 turnos seguidos con "Perfecto/Listo/Excelente/Entiendo"; el arranque varía y dice algo real, no una muletilla hueca.
+2. **Nombre:** 2–3 veces en toda la llamada como máximo (antes lo repetía en cada frase).
+3. **Frases de relleno:** rota el mismo sentido con otras palabras (no el mismo libreto cada vez).
+4. **Disponibilidad:** nunca pregunta "¿qué día?" antes de mirar la agenda; abre ella con el hueco más cercano.
+5. **Correcciones por posición:** "después de la T va una H" → inserta la H en su lugar ("Cristhian", no "Cristianh"); no pega conectores al dominio ("gmail.com", no "gmailpuntocom").
+6. **Teléfono:** valida celular colombiano (10 dígitos, empieza en 3) y lo repite agrupado y fluido.
+7. **Una pregunta por turno** (incl. síntomas): no interroga en cadena.
 
 ## Calendario DEMO — YA AJUSTADO por API (bajo riesgo, aplicado)
 - Horarios alineados a **L–V 10:00–17:00** (antes 11:00–19:15 desalineado con el negocio).
