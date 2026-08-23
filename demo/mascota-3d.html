@@ -108,8 +108,8 @@ function softMat(color,rough=0.72,metal=0){ return new THREE.MeshStandardMateria
 function buildCreature(){
   const g = new THREE.Group();
 
-  // --- body: rounded plush bean ---
-  const bodyMat = softMat(0x64d2c1, 0.62);
+  // --- body: rounded plush bean (matte -> smooth, no hard highlights) ---
+  const bodyMat = softMat(0x62d0bf, 0.92);
   const bodyGeo = new THREE.SphereGeometry(1, 96, 72);
   const bodyGroup = new THREE.Group();           // squash/stretch happens here
   const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
@@ -172,12 +172,12 @@ catch(e){ fail('Tu navegador no soporta 3D (WebGL).'); }
 if(renderer){
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.0;
   scene=new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff,0xcdeee7,1.15));
-  const key=new THREE.DirectionalLight(0xffffff,1.5); key.position.set(1.2,2.2,2.4); scene.add(key);
-  const fill=new THREE.DirectionalLight(0xbfe9ff,0.5); fill.position.set(-2,0.5,1.5); scene.add(fill);
-  const rim=new THREE.DirectionalLight(0xffffff,0.7); rim.position.set(0,1.5,-2.5); scene.add(rim);
+  // Soft, flat, wrap-around light -> smooth gradient like the SVG design (no hard specular edges)
+  scene.add(new THREE.HemisphereLight(0xffffff,0xd6f0ea,1.7));
+  const key=new THREE.DirectionalLight(0xffffff,0.55); key.position.set(0.6,1.6,2.6); scene.add(key);
+  const fill=new THREE.DirectionalLight(0xdff3ff,0.35); fill.position.set(-1.8,0.4,1.6); scene.add(fill);
   camera=new THREE.PerspectiveCamera(30,1,0.1,50);
   camera.position.set(0,0.12,5.7); camera.lookAt(0,0.05,0);
   function resize(){ const w=stage.clientWidth,h=stage.clientHeight; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false); }
