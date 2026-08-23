@@ -1156,6 +1156,12 @@ async def chat_interno_page() -> HTMLResponse:
     return _serve_demo("chat-interno-isis.html")
 
 
+@web_app.get("/mascota-3d")
+async def mascota_3d_page() -> HTMLResponse:
+    """Clínica Isis 3D talking-avatar demo (Ready Player Me + three.js)."""
+    return _serve_demo("mascota-3d.html")
+
+
 @web_app.options("/isis-web-call")
 async def isis_web_call_options() -> JSONResponse:
     return JSONResponse(
