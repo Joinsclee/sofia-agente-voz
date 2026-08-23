@@ -20,7 +20,7 @@
     background:radial-gradient(900px 520px at 82% -8%,rgba(53,194,176,.12),transparent 60%),radial-gradient(700px 480px at 6% 108%,rgba(255,143,118,.06),transparent 55%),linear-gradient(180deg,var(--bg-2),var(--bg));color:var(--txt);min-height:100dvh}
   header{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:15px 22px;border-bottom:1px solid var(--line);background:rgba(8,19,22,.72);backdrop-filter:blur(14px) saturate(1.1);position:sticky;top:0;z-index:5}
   .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-0.01em}
-  .logo .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(140deg,var(--teal),var(--teal-d));box-shadow:0 4px 12px -3px rgba(53,194,176,.6)}
+  .logo .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(140deg,var(--teal),var(--teal-d));box-shadow:0 4px 12px -3px rgba(53,194,176,.55);display:grid;place-items:center;color:#04231f;font-weight:800;font-size:16px;line-height:1}
   header small{color:var(--muted-2);font-weight:500}
   .spacer{flex:1}
   .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
@@ -38,7 +38,7 @@
   .row:hover{background:var(--panel2)}
   .row.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--teal)}
   .sem{width:14px;height:14px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
-  .sem.red{background:var(--red);box-shadow:0 0 10px var(--red)} .sem.amber{background:var(--amber)} .sem.green{background:var(--green);box-shadow:0 0 10px var(--green)}
+  .sem.red{background:var(--red);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(255,122,107,.5)} .sem.amber{background:var(--amber);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(244,196,82,.45)} .sem.green{background:var(--green);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(58,211,155,.5)}
   .row .meta{flex:1;min-width:0}
   .row .name{font-weight:700}
   .row .sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -46,7 +46,10 @@
   /* detail */
   .detail{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;min-height:200px;box-shadow:0 24px 60px -34px rgba(0,0,0,.75)}
   .detail .head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-  .detail .head b{font-size:17px}
+  .detail .head b{font-size:20px;font-weight:700;letter-spacing:-0.01em}
+  .noteform{display:flex;gap:8px;margin-top:10px}
+  .noteform textarea{flex:1;background:var(--chipbg);border:1px solid var(--line);border-radius:11px;color:var(--txt);font:inherit;padding:10px 12px;resize:vertical;min-height:44px}
+  .noteform textarea:focus{outline:none;border-color:var(--teal)}
   .detail .proc{color:var(--muted);font-size:13px;margin-bottom:14px}
   .item{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}
   .item:last-of-type{border-bottom:0}
@@ -78,7 +81,7 @@
 </head>
 <body>
 <header>
-  <div class="logo"><span class="dot"></span>Clínica&nbsp;Isis <small>· Programación quirúrgica</small></div>
+  <div class="logo"><span class="dot">+</span>Clínica&nbsp;Isis <small>· Programación quirúrgica</small></div>
   <div class="spacer"></div>
   <div class="who">Estás como
     <select id="who">
@@ -132,7 +135,7 @@
   function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ return {}; } }
   function save(s){ try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch(e){} }
   let state = load() || {};
-  let day = 0, selId = null;
+  let day = 0, selId = null, noteOpen = false;
 
   function pkey(id){ return day+":"+id; }
   function rec(id){ return state[pkey(id)] || (state[pkey(id)] = {items:{}, log:[], handoff:null}); }
@@ -187,8 +190,9 @@
               {c:"amber",t:"● En preparación · faltan requisitos por confirmar"};
     html+=`<div class="banner ${b.c}">${b.t}</div>`;
     html+=`<div class="handoff">
-      <button class="btn primary" id="handoffBtn" ${st.s!=="green"?"disabled":""}>Entregar turno como lista ✍</button>
-      <button class="btn ghost" id="noteBtn">Registrar nota de turno</button></div>`;
+      <button class="btn primary" id="handoffBtn" ${st.s!=="green"?"disabled":""}>Entregar turno como lista</button>
+      <button class="btn ghost" id="noteBtn">${noteOpen?'Cancelar':'Registrar nota de turno'}</button></div>`;
+    if(noteOpen) html+=`<div class="noteform"><textarea id="noteInput" rows="2" placeholder="Nota de turno para ${esc(p.code)}…"></textarea><button class="btn primary" id="noteSave">Guardar nota</button></div>`;
     if(r.handoff) html+=`<div class="banner ${st.s==='green'?'green':'amber'}">Turno entregado por <b>${esc(r.handoff.by)}</b> · ${r.handoff.at}${st.s!=='green'?' (cambió después de la entrega)':''}</div>`;
     html+=`<div class="log"><h3>Historial (inmutable)</h3>`;
     if(!r.log.length) html+=`<div class="entry">Sin movimientos aún.</div>`;
@@ -198,7 +202,8 @@
 
     el.querySelectorAll(".cbx").forEach(c=>c.onclick=()=>toggle(p, c.getAttribute("data-k")));
     const hb=el.querySelector("#handoffBtn"); if(hb) hb.onclick=()=>handoff(p);
-    el.querySelector("#noteBtn").onclick=()=>note(p);
+    el.querySelector("#noteBtn").onclick=()=>{ noteOpen=!noteOpen; renderDetail(); const t=document.getElementById("noteInput"); if(t) t.focus(); };
+    const ns=el.querySelector("#noteSave"); if(ns) ns.onclick=()=>saveNote(p);
   }
 
   function toggle(p, k){
@@ -212,9 +217,10 @@
     r.log.push({at:now(),by:who(),what:"ENTREGÓ el turno con la cirugía marcada como LISTA"});
     save(state); renderList(); renderDetail();
   }
-  function note(p){
-    const txt=prompt("Nota de turno para "+p.code+":"); if(!txt) return;
-    rec(p.id).log.push({at:now(),by:who(),what:"nota: "+txt}); save(state); renderDetail();
+  function saveNote(p){
+    const t=document.getElementById("noteInput"); const txt=t?t.value.trim():"";
+    if(!txt){ noteOpen=false; renderDetail(); return; }
+    rec(p.id).log.push({at:now(),by:who(),what:"nota: "+txt}); noteOpen=false; save(state); renderDetail();
   }
 
   document.getElementById("reset").onclick=()=>{ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };

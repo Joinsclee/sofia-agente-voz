@@ -66,7 +66,7 @@
     position:relative; width:100%; aspect-ratio:1/1;
     border-radius:16px; overflow:hidden;
     background:
-      radial-gradient(120% 88% at 50% -6%, #f2fbf8 0%, #d6efe9 44%, #a9dcd4 100%);
+      radial-gradient(120% 88% at 50% -6%, #eef7f4 0%, #d0e8e2 44%, #c4e5de 100%);
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.5), inset 0 -40px 80px -30px rgba(31,146,132,.35);
   }
   .stage::before{ /* soft top light */
@@ -116,6 +116,7 @@
   .ghost{background:var(--surface); color:var(--txt); box-shadow:inset 0 0 0 1px var(--line)}
   .ghost:hover{background:rgba(255,255,255,.09)}
   button[disabled]{opacity:.4; cursor:not-allowed; transform:none; box-shadow:inset 0 0 0 1px var(--line-2)}
+  button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   .hint{color:var(--muted-2); font-size:12.5px; line-height:1.55; text-align:center; margin:14px 10px 4px; text-wrap:pretty}
   .hint b{color:var(--muted); font-weight:600}
   @media (prefers-reduced-motion: reduce){#body,#headGroup,#armR,.lid,#brows{animation:none !important}}
@@ -125,7 +126,7 @@
   <main class="shell">
     <div class="topbar">
       <div class="brand">
-        <span class="mark">✦</span>
+        <span class="mark">+</span>
         <span class="name">Clínica Isis</span><span class="sep">·</span><span class="tag">Asistente virtual</span>
       </div>
       <div class="status"><span class="live"></span><span id="statusText">Lista para atenderte</span></div>
@@ -160,16 +161,21 @@
 
         <!-- BODY -->
         <g id="body">
-          <path d="M104 400 C104 316 148 296 200 296 C252 296 296 316 296 400 Z" fill="url(#topG)"/>
-          <path d="M200 300 L200 400" stroke="#dbe4e4" stroke-width="2.5"/>
+          <path d="M92 400 C92 310 146 292 200 292 C254 292 308 310 308 400 Z" fill="url(#topG)"/>
+          <path d="M200 296 L200 400" stroke="#dbe4e4" stroke-width="2.5"/>
           <circle cx="200" cy="330" r="4" fill="#cdd7d7"/><circle cx="200" cy="352" r="4" fill="#cdd7d7"/>
           <path d="M173 300 L200 330 L227 300 Z" fill="#eef3f3"/>
           <path d="M182 302 C190 340 190 360 196 396" stroke="var(--teal)" stroke-width="7" fill="none" stroke-linecap="round"/>
           <rect x="188" y="352" width="20" height="26" rx="5" fill="var(--teal)"/>
           <rect x="192" y="357" width="12" height="3" rx="1.5" fill="rgba(255,255,255,.6)"/>
           <g id="armR">
-            <path d="M270 316 C300 320 316 298 320 274" stroke="url(#topG)" stroke-width="26" fill="none" stroke-linecap="round"/>
-            <circle cx="322" cy="268" r="15" fill="#f0bd99"/>
+            <path d="M276 314 C304 318 318 298 322 276" stroke="url(#topG)" stroke-width="26" fill="none" stroke-linecap="round"/>
+            <g stroke="#f0bd99" stroke-width="5.5" stroke-linecap="round">
+              <line x1="315" y1="272" x2="313" y2="259"/>
+              <line x1="322" y1="270" x2="322" y2="256"/>
+              <line x1="329" y1="272" x2="331" y2="259"/>
+            </g>
+            <path d="M309 274 a13 12 0 0 1 26 0 q0 11 -13 11 q-13 0 -13 -11 z" fill="#f4c6a6"/>
           </g>
           <path d="M130 316 C104 324 96 350 100 370" stroke="url(#topG)" stroke-width="26" fill="none" stroke-linecap="round"/>
           <circle cx="100" cy="372" r="14" fill="#f0bd99"/>
@@ -180,7 +186,7 @@
           <!-- hair back -->
           <path d="M116 152 C116 68 174 42 200 42 C226 42 284 68 284 152 C302 212 288 252 280 264 L120 264 C112 252 98 212 116 152 Z" fill="url(#hairG)"/>
           <!-- neck + soft shadow -->
-          <rect x="185" y="226" width="30" height="46" rx="14" fill="#e3ad88"/>
+          <rect x="184" y="224" width="32" height="72" rx="15" fill="#e3ad88"/>
           <ellipse cx="200" cy="250" rx="34" ry="12" fill="rgba(150,90,60,.18)"/>
           <!-- face -->
           <ellipse id="face" cx="200" cy="176" rx="75" ry="85" fill="url(#faceG)"/>
@@ -196,8 +202,8 @@
           </g>
           <!-- eyes -->
           <g id="eyes">
-            <ellipse cx="168" cy="167" rx="15" ry="18" fill="#fbfdfd"/>
-            <ellipse cx="232" cy="167" rx="15" ry="18" fill="#fbfdfd"/>
+            <ellipse cx="168" cy="167" rx="13" ry="16.5" fill="#eef3f2"/>
+            <ellipse cx="232" cy="167" rx="13" ry="16.5" fill="#eef3f2"/>
             <circle cx="170" cy="169" r="8.6" fill="url(#iris)"/><circle cx="234" cy="169" r="8.6" fill="url(#iris)"/>
             <circle cx="173" cy="165" r="2.7" fill="#fff"/><circle cx="237" cy="165" r="2.7" fill="#fff"/>
             <!-- lashes -->
@@ -225,9 +231,9 @@
     <div class="transcript" id="caption"></div>
 
     <div class="controls">
-      <button class="primary" id="talkBtn">🎤 Hablar con Bianca</button>
-      <button class="ghost" id="previewBtn">▶ Vista previa</button>
-      <button class="ghost wide" id="stopBtn" disabled>■ Terminar conversación</button>
+      <button class="primary" id="talkBtn"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Hablar con Bianca</button>
+      <button class="ghost" id="previewBtn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 4v16l13-8z"/></svg> Vista previa</button>
+      <button class="ghost wide" id="stopBtn" disabled><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Terminar conversación</button>
     </div>
     <p class="hint" id="hint">Toca <b>Hablar con Bianca</b> para conversar en vivo con su voz neutra, o <b>Vista previa</b> para verla presentarse. Requiere micrófono para la conversación en vivo.</p>
   </main>
