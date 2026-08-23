@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bianca · Clínica Isis</title>
+<style>
+  :root{
+    --bg1:#0f2b33; --bg2:#123a44; --card:#0e242b;
+    --teal:#2fb7a6; --teal-d:#1f8f82; --rose:#f2b8b0; --skin:#f6c9a8; --skin-sh:#e7b393;
+    --hair:#3a2b28; --hair-hi:#5a423c; --ink:#0c1b1f; --cream:#f4efe9;
+    --top:#ffffff; --top-sh:#e7ecec; --accent:#ff8a71;
+    --txt:#eaf3f2; --muted:#9fc0bc;
+    --ease:cubic-bezier(0.23,1,0.32,1);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--txt);
+    background:radial-gradient(1200px 700px at 50% -10%, #17444e 0%, var(--bg1) 55%, #0a1e24 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100dvh; padding:24px; gap:18px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; letter-spacing:.5px}
+  .brand b{font-weight:800}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
+  .brand small{color:var(--muted); font-weight:500}
+
+  .stage{
+    position:relative; width:min(420px,92vw); aspect-ratio:1/1;
+    border-radius:28px; overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 50% 8%, #e9fbf7 0%, #cfeee9 40%, #a9ddd6 100%);
+    box-shadow:0 24px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.4);
+  }
+  .stage::after{ /* soft vignette */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(120% 100% at 50% 120%, rgba(31,143,130,.25), transparent 55%);
+  }
+  svg.mascota{ position:absolute; inset:0; width:100%; height:100% }
+
+  /* --- idle motion --- */
+  #body{ transform-box:fill-box; transform-origin:50% 100%; animation:breathe 4.6s var(--ease) infinite }
+  @keyframes breathe{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-4px) rotate(.4deg)}}
+  #headGroup{ transform-box:fill-box; transform-origin:50% 90%; animation:sway 6.5s var(--ease) infinite }
+  @keyframes sway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+  .lid{ transform-box:fill-box; transform-origin:50% 0%; transform:scaleY(0) }
+  body.blink .lid{ animation:blink 5.5s infinite }
+  @keyframes blink{0%,94%,100%{transform:scaleY(0)}97%{transform:scaleY(1)}}
+  #armR{ transform-box:fill-box; transform-origin:78% 12%; animation:wave 7s var(--ease) infinite }
+  @keyframes wave{0%,100%{transform:rotate(0deg)}8%{transform:rotate(-8deg)}16%{transform:rotate(2deg)}24%{transform:rotate(-5deg)}32%{transform:rotate(0deg)}}
+  body.talking #brows{ animation:browlift 1.9s var(--ease) infinite }
+  @keyframes browlift{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+  body.talking #headGroup{ animation:sway 3.2s var(--ease) infinite } /* livelier while talking */
+
+  /* status pill */
+  .status{
+    position:absolute; left:14px; top:14px; z-index:3;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(9,26,31,.66); color:#dff5f1; backdrop-filter:blur(6px);
+    padding:7px 12px; border-radius:999px; font-size:13px; font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+  }
+  .status .live{width:8px;height:8px;border-radius:50%;background:#7d8b8a}
+  body.talking .status .live{background:var(--accent); box-shadow:0 0 10px var(--accent); animation:pulse 1s infinite}
+  body.connected .status .live{background:var(--teal); box-shadow:0 0 10px var(--teal)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .controls{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+  button{
+    font:inherit; font-weight:700; cursor:pointer; border:0; border-radius:14px;
+    padding:14px 22px; transition:transform .16s var(--ease), box-shadow .16s var(--ease), background .2s;
+    display:inline-flex; align-items:center; gap:9px;
+  }
+  button:active{transform:scale(.97)}
+  .primary{background:linear-gradient(180deg,var(--teal),var(--teal-d)); color:#04231f; box-shadow:0 10px 24px rgba(47,183,166,.35)}
+  .primary:hover{box-shadow:0 14px 30px rgba(47,183,166,.5)}
+  .ghost{background:rgba(255,255,255,.08); color:var(--txt); box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+  .ghost:hover{background:rgba(255,255,255,.14)}
+  button[disabled]{opacity:.5; cursor:not-allowed; transform:none}
+  .hint{color:var(--muted); font-size:13px; max-width:420px; text-align:center; line-height:1.5}
+  .cap{position:absolute; left:0; right:0; bottom:0; z-index:3; padding:14px 16px 16px;
+    background:linear-gradient(0deg, rgba(6,20,24,.82), transparent);
+    font-size:15px; min-height:34px; text-align:center; color:#eafffb}
+  @media (prefers-reduced-motion: reduce){
+    #body,#headGroup,#armR,.lid,#brows{animation:none !important}
+  }
+</style>
+</head>
+<body class="blink">
+  <div class="brand"><span class="dot"></span><b>Clínica&nbsp;Isis</b><small>· asistente virtual</small></div>
+
+  <div class="stage" id="stage">
+    <div class="status"><span class="live"></span><span id="statusText">Lista para atenderte</span></div>
+
+    <!-- ===== MASCOTA (SVG rig: cabeza, ojos con parpadeo, cejas, boca lip-sync, brazo) ===== -->
+    <svg class="mascota" viewBox="0 0 400 400" aria-label="Bianca, mascota de Clínica Isis">
+      <defs>
+        <linearGradient id="topG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e7ecec"/>
+        </linearGradient>
+        <radialGradient id="cheekG" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#ff9b8a" stop-opacity=".55"/><stop offset="1" stop-color="#ff9b8a" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a352f"/><stop offset="1" stop-color="#2e211d"/>
+        </linearGradient>
+      </defs>
+
+      <!-- BODY -->
+      <g id="body">
+        <!-- torso / medical top -->
+        <path d="M110 400 C110 320 150 300 200 300 C250 300 290 320 290 400 Z" fill="url(#topG)"/>
+        <path d="M200 300 L200 400" stroke="#dfe6e6" stroke-width="3"/>
+        <circle cx="200" cy="330" r="4.5" fill="#cfd8d8"/><circle cx="200" cy="352" r="4.5" fill="#cfd8d8"/>
+        <!-- collar -->
+        <path d="M175 302 L200 328 L225 302 Z" fill="#eef3f3"/>
+        <!-- teal lanyard accent -->
+        <path d="M182 304 C190 340 190 360 196 396" stroke="#2fb7a6" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <rect x="188" y="352" width="20" height="26" rx="4" fill="#2fb7a6"/>
+        <!-- right arm (waves) -->
+        <g id="armR">
+          <path d="M270 318 C300 322 316 300 320 276" stroke="url(#topG)" stroke-width="26" fill="none" stroke-linecap="round"/>
+          <circle cx="322" cy="270" r="15" fill="var(--skin,#f6c9a8)"/>
+        </g>
+        <!-- left arm -->
+        <path d="M130 318 C104 326 96 352 100 372" stroke="url(#topG)" stroke-width="26" fill="none" stroke-linecap="round"/>
+        <circle cx="100" cy="374" r="14" fill="var(--skin,#f6c9a8)"/>
+      </g>
+
+      <!-- HEAD -->
+      <g id="headGroup">
+        <!-- hair back -->
+        <path d="M118 150 C118 70 175 44 200 44 C225 44 282 70 282 150 C300 210 286 250 278 262 L122 262 C114 250 100 210 118 150 Z" fill="url(#hairG)"/>
+        <!-- neck -->
+        <rect x="184" y="228" width="32" height="46" rx="14" fill="#e7b393"/>
+        <!-- face -->
+        <ellipse id="face" cx="200" cy="176" rx="76" ry="86" fill="#f6c9a8"/>
+        <!-- ears + earrings -->
+        <circle cx="126" cy="182" r="13" fill="#f0bd99"/><circle cx="274" cy="182" r="13" fill="#f0bd99"/>
+        <circle cx="126" cy="198" r="4" fill="#2fb7a6"/><circle cx="274" cy="198" r="4" fill="#2fb7a6"/>
+        <!-- cheeks -->
+        <circle cx="150" cy="200" r="20" fill="url(#cheekG)"/><circle cx="250" cy="200" r="20" fill="url(#cheekG)"/>
+        <!-- brows -->
+        <g id="brows" fill="none" stroke="#4a352f" stroke-width="6" stroke-linecap="round">
+          <path d="M150 138 Q168 128 186 136"/>
+          <path d="M214 136 Q232 128 250 138"/>
+        </g>
+        <!-- eyes -->
+        <g id="eyes">
+          <ellipse cx="168" cy="166" rx="15" ry="18" fill="#fff"/>
+          <ellipse cx="232" cy="166" rx="15" ry="18" fill="#fff"/>
+          <circle cx="170" cy="169" r="8.5" fill="#2c1f1b"/><circle cx="234" cy="169" r="8.5" fill="#2c1f1b"/>
+          <circle cx="173" cy="165" r="2.6" fill="#fff"/><circle cx="237" cy="165" r="2.6" fill="#fff"/>
+          <!-- eyelids (blink) -->
+          <rect class="lid" x="151" y="147" width="34" height="40" rx="15" fill="#f6c9a8"/>
+          <rect class="lid" x="215" y="147" width="34" height="40" rx="15" fill="#f6c9a8"/>
+        </g>
+        <!-- nose -->
+        <path d="M200 176 q6 14 -2 22" fill="none" stroke="#e0a883" stroke-width="4" stroke-linecap="round"/>
+        <!-- MOUTH (lip-sync: se escala en Y con el audio) -->
+        <g id="mouthG" transform="translate(200 214)">
+          <path id="mouth" d="M-22 0 Q0 6 22 0 Q0 4 -22 0 Z" fill="#8a2f33"/>
+          <path id="teeth" d="M-16 -1 Q0 1 16 -1 L16 -3 Q0 -2 -16 -3 Z" fill="#fff"/>
+          <path id="tongue" d="M-10 3 Q0 12 10 3 Q0 8 -10 3Z" fill="#d76b78" opacity="0"/>
+        </g>
+        <!-- front hair bangs -->
+        <path d="M124 148 C138 96 180 74 200 74 C220 74 262 96 276 148 C250 120 232 118 214 128 C208 104 192 104 186 128 C168 118 150 120 124 148 Z" fill="url(#hairG)"/>
+      </g>
+    </svg>
+
+    <div class="cap" id="caption"></div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="talkBtn">🎤 Hablar con Bianca</button>
+    <button class="ghost" id="previewBtn">▶ Vista previa</button>
+    <button class="ghost" id="stopBtn" disabled>■ Terminar</button>
+  </div>
+  <p class="hint" id="hint">Toca <b>Hablar con Bianca</b> para conversar en vivo con su voz neutra, o <b>Vista previa</b> para verla presentarse. Necesita micrófono para la conversación en vivo.</p>
+
+<script>
+(function(){
+  "use strict";
+  // ---- Config: el backend mintea el token de llamada web de Retell ----
+  const TOKEN_ENDPOINT = (new URLSearchParams(location.search).get("backend")
+     || "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run") + "/isis-web-call";
+  const RETELL_SDK = "https://unpkg.com/retell-client-js-sdk@latest/dist/index.js";
+
+  const body = document.body;
+  const mouth = document.getElementById("mouth");
+  const mouthG = document.getElementById("mouthG");
+  const teeth = document.getElementById("teeth");
+  const tongue = document.getElementById("tongue");
+  const statusText = document.getElementById("statusText");
+  const caption = document.getElementById("caption");
+  const talkBtn = document.getElementById("talkBtn");
+  const previewBtn = document.getElementById("previewBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const hint = document.getElementById("hint");
+
+  // ---- Lip-sync engine: openness 0..1 -> forma de la boca ----
+  let target=0, cur=0, raf=null;
+  function animateMouth(){
+    cur += (target-cur)*0.35;
+    const o = Math.max(0, Math.min(1, cur));
+    // boca: de línea (cerrada) a óvalo (abierta)
+    const h = 2 + o*20;      // alto
+    const w = 22 - o*4;      // se angosta al abrir
+    mouth.setAttribute("d", `M${-w} 0 Q0 ${h} ${w} 0 Q0 ${-h*0.35} ${-w} 0 Z`);
+    mouthG.setAttribute("transform", `translate(200 ${214 + o*3})`);
+    teeth.style.opacity = o>0.18 ? 1 : 0;
+    tongue.style.opacity = o>0.55 ? 0.9 : 0;
+    raf = requestAnimationFrame(animateMouth);
+  }
+  animateMouth();
+
+  function setTalking(on){ body.classList.toggle("talking", on); if(!on) target=0; }
+  function setStatus(t, connected){ statusText.textContent=t; body.classList.toggle("connected", !!connected); }
+
+  // ---------- MODO 1: Vista previa (offline, SpeechSynthesis + flap por tiempo) ----------
+  const INTRO = "Hola, soy Bianca, la asistente de Clínica Isis. Con gusto te ayudo a agendar tu cita de valoración. ¿En qué te puedo ayudar hoy?";
+  let previewTimer=null;
+  function pickSpanishVoice(){
+    const vs = speechSynthesis.getVoices()||[];
+    return vs.find(v=>/es(-|_)?(419|LA|MX|CO|US)/i.test(v.lang)) || vs.find(v=>/^es/i.test(v.lang)) || null;
+  }
+  function preview(){
+    stopAll();
+    caption.textContent = "";
+    setTalking(true); setStatus("Presentándose…");
+    // flap de boca mientras "habla"
+    previewTimer = setInterval(()=>{ target = 0.25 + Math.random()*0.7; }, 95);
+    // subtítulo palabra por palabra
+    const words = INTRO.split(" "); let i=0;
+    const capTimer = setInterval(()=>{ caption.textContent = words.slice(0,++i).join(" "); if(i>=words.length) clearInterval(capTimer); }, 165);
+    const done = ()=>{ clearInterval(previewTimer); target=0; setTalking(false); setStatus("Lista para atenderte"); stopBtn.disabled=true; };
+    try{
+      const u = new SpeechSynthesisUtterance(INTRO);
+      u.lang="es-419"; u.rate=1.0; u.pitch=1.05;
+      const v=pickSpanishVoice(); if(v) u.voice=v;
+      u.onend=done; u.onerror=done;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      stopBtn.disabled=false;
+    }catch(e){ setTimeout(done, words.length*165+400); }
+  }
+  // voices can load late
+  if(typeof speechSynthesis!=="undefined") speechSynthesis.onvoiceschanged=()=>{};
+
+  // ---------- MODO 2: Hablar con Bianca (Retell web call, voz real + lip-sync por amplitud) ----------
+  let retell=null, audioCtx=null, ampRaf=null;
+  async function loadRetell(){
+    if(window.RetellWebClient) return window.RetellWebClient;
+    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=RETELL_SDK; s.onload=res; s.onerror=()=>rej(new Error("sdk")); document.head.appendChild(s); });
+    // el bundle expone RetellWebClient global o como módulo
+    return window.RetellWebClient || (window.RetellClientJsSdk && window.RetellClientJsSdk.RetellWebClient);
+  }
+  async function talk(){
+    stopAll();
+    setStatus("Conectando…"); talkBtn.disabled=true; caption.textContent="";
+    let token;
+    try{
+      const r = await fetch(TOKEN_ENDPOINT, {method:"POST"});
+      const j = await r.json();
+      token = (j.data && (j.data.access_token||j.data.accessToken)) || j.access_token || j.accessToken;
+      if(!token) throw new Error("sin token");
+    }catch(e){ setStatus("No se pudo conectar"); hint.textContent="El backend de llamada web no respondió. Usa Vista previa mientras tanto."; talkBtn.disabled=false; return; }
+    let RWC;
+    try{ RWC = await loadRetell(); if(!RWC) throw new Error(); }
+    catch(e){ setStatus("Sin conexión al SDK"); hint.textContent="No se pudo cargar el SDK de voz (revisa internet). Usa Vista previa."; talkBtn.disabled=false; return; }
+    try{
+      retell = new RWC();
+      retell.on("call_started", ()=>{ setStatus("En llamada — háblale", true); stopBtn.disabled=false; });
+      retell.on("call_ended", ()=>{ endCall(); });
+      retell.on("agent_start_talking", ()=>{ setTalking(true); if(!ampRaf) flapFallback(); });
+      retell.on("agent_stop_talking", ()=>{ setTalking(false); target=0; });
+      retell.on("update", (u)=>{ if(u && u.transcript){ const last=[...u.transcript].reverse().find(t=>t.role==="agent"); if(last) caption.textContent=last.content; } });
+      // amplitud real si el SDK entrega frames de audio
+      retell.on("audio", (pcm)=>{ if(!pcm||!pcm.length) return; let s=0; for(let i=0;i<pcm.length;i++) s+=pcm[i]*pcm[i]; const rms=Math.sqrt(s/pcm.length); target = Math.min(1, rms*7); });
+      await retell.startCall({ accessToken: token });
+    }catch(e){ setStatus("No se pudo iniciar la llamada"); talkBtn.disabled=false; }
+  }
+  // fallback: si no llegan frames de audio, animar boca mientras el agente habla
+  function flapFallback(){
+    let live=true;
+    const tick=()=>{ if(!body.classList.contains("talking")){ live=false; target=0; return;} target = 0.3 + Math.random()*0.65; if(live) setTimeout(tick, 90); };
+    tick();
+  }
+  function endCall(){ setTalking(false); target=0; setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null;} }
+
+  function stopAll(){
+    if(previewTimer){clearInterval(previewTimer); previewTimer=null;}
+    if(typeof speechSynthesis!=="undefined") speechSynthesis.cancel();
+    if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null; }
+    setTalking(false); target=0; stopBtn.disabled=true;
+  }
+
+  talkBtn.addEventListener("click", talk);
+  previewBtn.addEventListener("click", preview);
+  stopBtn.addEventListener("click", ()=>{ stopAll(); setStatus("Lista para atenderte"); talkBtn.disabled=false; });
+})();
+</script>
+</body>
+</html>

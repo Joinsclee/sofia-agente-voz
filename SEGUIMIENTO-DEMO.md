@@ -23,7 +23,15 @@ Backend redeployado en Modal (`agente-voz-ghl` + `-worker`, cuenta dineroconscie
 ## MVP para el cierre de Clínica Isis (lunes) — construyendo, en orden: mascota-voz → chat interno → checklist
 Decisión del operador: construir los MVPs (contra la recomendación "solo discovery" del análisis — advertencia registrada). Se hace reversible y SIN tocar el demo Aurora en vivo.
 
-### ✅ MVP #1 — "Bianca", mascota con voz de Clínica Isis (COMPLETO y verificado)
+### ✅ MVP #1 — "Bianca", MASCOTA VISUAL que gesticula al hablar (COMPLETO, en vivo)
+Aclaración del operador: la mascota es un **personaje visual que gesticula mientras habla** (no solo voz). Construido como **avatar web interactivo autocontenido** (no imagen plana — SVG riggeable: boca con lip-sync, parpadeo, gestos, saludo).
+- **DEMO EN VIVO (abrir en cualquier dispositivo):** `https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run/mascota`
+  - "Hablar con Bianca" → conversación en vivo: mic → voz neutra de Bianca (Retell web call) → lip-sync por amplitud + gestos. Endpoint `POST /isis-web-call` mintea el token (acotado al agente Isis).
+  - "Vista previa" → intro offline (SpeechSynthesis + flap) por si no hay red.
+- Archivos: `demo/mascota-bianca.html` (SVG + motor de animación + SDK Retell), endpoints `GET /mascota` y `POST /isis-web-call` en `app/main.py`. Servido mismo-origen (sin CORS). Verificado: render (screenshots idle+talking), 0 errores de consola, 200 en ambos endpoints; Aurora intacto.
+- Sigue pendiente: nombre italiano real (placeholder "Bianca"); el personaje es un diseño provisional (cuando la clínica dé su muñequita/estilo, se re-viste).
+
+### ✅ MVP #1 (capa de voz) — agente Retell "Bianca" (COMPLETO y verificado)
 - Agente Retell **separado** (`agent_ae9bce89c54c26f046c9950444`, llm `llm_b410de87c56827a9e3db79503136`), no toca Aurora.
 - Voz **neutra latinoamericana** `cartesia-Hailey` (requisito #1 del dueño: nada cachaco), expresiva (temp 1.1 + backchannel), velocidad natural 1.0.
 - Multi-especialidad (IPS, triage por área + paciente existente con servicio nuevo), identidad "experiencia Isis", guardrails clínicos intactos.

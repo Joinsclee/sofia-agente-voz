@@ -23,12 +23,13 @@ import logging
 import os
 from collections.abc import Mapping
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, model_validator
 
 from app.auth import allowed_origins
@@ -1104,6 +1105,82 @@ async def retell_webhook(request: Request, background: BackgroundTasks) -> JSONR
 # ==========================================================================
 
 
+# --------------------------------------------------------------------------
+# Clínica Isis — talking-mascot demo ("Bianca"). SEPARATE from Aurora.
+# The page is served here so it is same-origin with the token endpoint below
+# (no CORS to start the web call). Scoped to the one Isis agent on purpose.
+# --------------------------------------------------------------------------
+ISIS_DEMO_AGENT_ID = (
+    os.environ.get("RETELL_ISIS_AGENT_ID") or "agent_ae9bce89c54c26f046c9950444"
+).strip()
+_CORS_ANY = {"Access-Control-Allow-Origin": "*"}
+
+
+def _mascota_html_path() -> Path | None:
+    """Locate the demo HTML across local dev and the Modal image layout."""
+    from app.services.ghl_service import _REPO_ROOT  # proven to resolve to /root in the image
+
+    candidates = [
+        _REPO_ROOT / "demo" / "mascota-bianca.html",
+        Path(__file__).resolve().parents[1] / "demo" / "mascota-bianca.html",
+        Path("/root/demo/mascota-bianca.html"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
+@web_app.get("/mascota")
+async def mascota_page(request: Request) -> HTMLResponse:
+    """Serves the Clínica Isis talking-mascot demo (Bianca)."""
+    path = _mascota_html_path()
+    if not path:
+        if request.query_params.get("debug"):
+            from app.services.ghl_service import _REPO_ROOT
+            info = {
+                "repo_root": str(_REPO_ROOT),
+                "root_listing": sorted(os.listdir("/root")) if os.path.isdir("/root") else "no /root",
+                "repo_root_listing": sorted(os.listdir(_REPO_ROOT)) if _REPO_ROOT.is_dir() else "n/a",
+                "file_dunder": str(Path(__file__).resolve()),
+            }
+            return JSONResponse(status_code=404, content=info)
+        return HTMLResponse("<h1>Demo no disponible</h1>", status_code=404)
+    return HTMLResponse(path.read_text(encoding="utf-8"))
+
+
+@web_app.options("/isis-web-call")
+async def isis_web_call_options() -> JSONResponse:
+    return JSONResponse(
+        status_code=204,
+        content=None,
+        headers={**_CORS_ANY, "Access-Control-Allow-Methods": "POST, OPTIONS",
+                 "Access-Control-Allow-Headers": "Content-Type"},
+    )
+
+
+@web_app.post("/isis-web-call")
+async def isis_web_call() -> JSONResponse:
+    """Mint a short-lived Retell web-call token for the Isis demo agent only."""
+    from app.services import retell_service as rs
+
+    try:
+        call = rs._as_dict(rs._client().call.create_web_call(agent_id=ISIS_DEMO_AGENT_ID))
+    except Exception as exc:  # noqa: BLE001 — demo endpoint, fail honestly
+        LOG.error("isis-web-call failed: %s", exc)
+        return JSONResponse(
+            status_code=502,
+            content={"ok": False, "error": "retell_web_call_failed", "detail": str(exc)[:200]},
+            headers=_CORS_ANY,
+        )
+    token = call.get("access_token") or call.get("accessToken")
+    return JSONResponse(
+        status_code=200,
+        content={"ok": True, "data": {"access_token": token, "call_id": call.get("call_id")}},
+        headers=_CORS_ANY,
+    )
+
+
 @web_app.get("/health")
 async def health() -> JSONResponse:
     """Says whether the backend is up and configured. Deliberately does not call GHL.
@@ -1173,6 +1250,8 @@ if modal is not None:
         # and the failure hides, because the webhook answers 200 by design, so
         # Retell never retries and the raised error only lands in a log.
         .add_local_dir("prompts", "/root/prompts")
+        # The Clínica Isis mascot demo page, served at GET /mascota.
+        .add_local_file("demo/mascota-bianca.html", "/root/demo/mascota-bianca.html")
         .add_local_python_source("app")
     )
 
