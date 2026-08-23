@@ -36,15 +36,15 @@
   body.talking .status{color:var(--txt)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;
-    background:radial-gradient(120% 90% at 50% -8%,#12333a 0%,#0c2329 55%,#081a1f 100%);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 -50px 90px -40px rgba(0,0,0,.6)}
+    background:radial-gradient(120% 92% at 50% -6%,#eaf7f3 0%,#cfe9e2 46%,#a9d6ce 100%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 -46px 90px -40px rgba(31,146,132,.35)}
   .stage canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
   .overlay{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:20px;
-    color:var(--muted);font-size:13.5px;background:rgba(8,19,22,.35);backdrop-filter:blur(2px);transition:opacity .4s}
-  .overlay .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--teal);animation:spin 1s linear infinite;margin:0 auto 12px}
+    color:#0c2a2e;font-size:13.5px;background:rgba(224,244,239,.55);backdrop-filter:blur(2px);transition:opacity .4s}
+  .overlay .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid rgba(28,146,132,.25);border-top-color:var(--teal-d);animation:spin 1s linear infinite;margin:0 auto 12px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .overlay.hide{opacity:0;pointer-events:none}
-  .status-pill3{position:absolute;left:14px;top:14px;z-index:2}
+  .overlay a{color:var(--teal-d);font-weight:600}
   .transcript{min-height:46px;margin:12px 4px 0;padding:12px 15px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:13px;font-size:14.5px;line-height:1.5;color:#eafffb;text-align:center;display:flex;align-items:center;justify-content:center;transition:border-color .3s,background .3s}
   .transcript:empty::before{content:"Aquí verás lo que dice Bianca…";color:var(--muted-2);font-size:13px}
   body.talking .transcript{border-color:rgba(255,143,118,.35);background:rgba(255,143,118,.05)}
@@ -66,12 +66,12 @@
 <body>
   <main class="shell">
     <div class="topbar">
-      <div class="brand"><span class="mark">+</span><span class="name">Clínica Isis</span><span class="sep">·</span><span class="tag">Asistente virtual 3D</span></div>
+      <div class="brand"><span class="mark">+</span><span class="name">Clínica Isis</span><span class="sep">·</span><span class="tag">Mascota virtual 3D</span></div>
       <div class="status"><span class="live"></span><span id="statusText">Lista para atenderte</span></div>
     </div>
     <div class="stage" id="stage">
       <canvas id="canvas"></canvas>
-      <div class="overlay" id="overlay"><div><div class="spin"></div>Cargando avatar 3D…</div></div>
+      <div class="overlay" id="overlay"><div><div class="spin"></div>Cargando mascota 3D…</div></div>
     </div>
     <div class="transcript" id="caption"></div>
     <div class="controls">
@@ -79,93 +79,99 @@
       <button class="ghost" id="previewBtn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 4v16l13-8z"/></svg> Vista previa</button>
       <button class="ghost wide" id="stopBtn" disabled><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Terminar conversación</button>
     </div>
-    <p class="hint" id="hint">Avatar 3D con voz neutra en vivo. Toca <b>Hablar con Bianca</b> (requiere micrófono) o <b>Vista previa</b>. ¿Prefieres la versión 2D? <a href="./mascota">ábrela aquí</a>.</p>
+    <p class="hint" id="hint">Mascota 3D con voz neutra en vivo. Toca <b>Hablar con Bianca</b> (requiere micrófono) o <b>Vista previa</b>. ¿Prefieres la versión 2D? <a href="./mascota">ábrela aquí</a>.</p>
   </main>
 
 <script type="importmap">
 { "imports": {
   "three":         "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.2/lib/three-vrm.module.js"
 }}
 </script>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
 const BACKEND = ((new URLSearchParams(location.search).get("backend")
    || "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run")).replace(/\/+$/,"");
 const TOKEN_ENDPOINT = BACKEND + "/isis-web-call";
-const MODEL_URL = 'https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/brunette.glb';
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/pixiv/three-vrm@v3.5.2/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm';
 
 const body=document.body, canvas=document.getElementById('canvas'), stage=document.getElementById('stage');
 const overlay=document.getElementById('overlay'), statusText=document.getElementById('statusText'), caption=document.getElementById('caption');
 const talkBtn=document.getElementById('talkBtn'), previewBtn=document.getElementById('previewBtn'), stopBtn=document.getElementById('stopBtn'), hint=document.getElementById('hint');
 
+const state = { rms:0, talking:false };
 function setStatus(t,connected){ statusText.textContent=t; body.classList.toggle('connected',!!connected); }
-function setTalking(on){ body.classList.toggle('talking',on); if(!on) targetMouth=0; }
-function fail(msg){ overlay.classList.remove('hide'); overlay.innerHTML='<div>'+msg+'<br><a href="./mascota" style="color:var(--teal)">Abrir versión 2D</a></div>'; }
+function setTalking(on){ state.talking=!!on; body.classList.toggle('talking',!!on); if(!on) state.rms=0; }
+function fail(msg){ overlay.classList.remove('hide'); overlay.innerHTML='<div>'+msg+'<br><a href="./mascota">Abrir versión 2D</a></div>'; }
 
-// ---------- three.js ----------
-let renderer, scene, camera, morphIndex=new Map(), headBone=null, headBase=null, ready=false;
-let targetMouth=0, mouth=0, talking=false;
+// ---------- three.js + VRM ----------
+let renderer,scene,camera,vrm=null,head=null,mouth=0,ready=false;
+let blink=0,nextBlink=1.5,blinking=false,blinkT=0;
 try{
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
 }catch(e){ fail('Tu navegador no soporta 3D (WebGL).'); }
 if(renderer){
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+  renderer.toneMapping=THREE.NoToneMapping;            // ACES lava el toon shading (MToon)
   scene=new THREE.Scene();
-  const pmrem=new THREE.PMREMGenerator(renderer);
-  scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
-  const key=new THREE.DirectionalLight(0xffffff,2.3); key.position.set(0.6,1.8,1.2); scene.add(key);
-  const rim=new THREE.DirectionalLight(0x9fd6ff,1.2); rim.position.set(-1.2,1.6,-1.0); scene.add(rim);
-  scene.add(new THREE.HemisphereLight(0xffffff,0x223044,0.65));
-  camera=new THREE.PerspectiveCamera(26,1,0.1,20);
+  scene.add(new THREE.DirectionalLight(0xffffff,1.5).translateY(2));
+  const key=new THREE.DirectionalLight(0xffffff,1.4); key.position.set(0.5,2.0,1.5); scene.add(key);
+  scene.add(new THREE.AmbientLight(0xffffff,0.95));    // ambiente fuerte = look plano de caricatura
+  camera=new THREE.PerspectiveCamera(24,1,0.1,20);
   function resize(){ const w=stage.clientWidth,h=stage.clientHeight; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false); }
   addEventListener('resize',resize); resize();
 
-  function registerMorphs(root){
-    root.traverse(o=>{
-      if(o.isMesh&&o.morphTargetDictionary){ for(const [n,i] of Object.entries(o.morphTargetDictionary)){ if(!morphIndex.has(n)) morphIndex.set(n,[]); morphIndex.get(n).push({mesh:o,index:i}); } }
-      if(o.isBone&&o.name==='Head') headBone=o;
-    });
-  }
-  function setMorph(n,v){ const t=morphIndex.get(n); if(!t) return; for(const x of t) x.mesh.morphTargetInfluences[x.index]=v; }
-
-  new GLTFLoader().load(MODEL_URL,(gltf)=>{
-    const av=gltf.scene; scene.add(av); registerMorphs(av);
-    if(headBone) headBase=headBone.quaternion.clone();
-    const hp=new THREE.Vector3(); (headBone||av).getWorldPosition(hp);
-    const y=headBone?hp.y+0.02:1.55;
-    camera.position.set(0,y-0.02,0.72); camera.lookAt(0,y-0.05,0);
+  const loader=new GLTFLoader();
+  loader.register(parser=>new VRMLoaderPlugin(parser));
+  loader.load(MODEL_URL,(gltf)=>{
+    vrm=gltf.userData.vrm;
+    try{ VRMUtils.rotateVRM0(vrm); }catch(e){}
+    vrm.scene.traverse(o=>o.frustumCulled=false);
+    scene.add(vrm.scene);
+    head=vrm.humanoid.getNormalizedBoneNode('head');
+    // frame head-and-shoulders around the actual head height
+    const hp=new THREE.Vector3(); (head||vrm.scene).getWorldPosition(hp);
+    const y=head?hp.y:1.4;
+    camera.position.set(0,y+0.02,0.98); camera.lookAt(0,y-0.02,0);
     ready=true; overlay.classList.add('hide');
-  },undefined,(err)=>{ console.error(err); fail('No se pudo cargar el avatar 3D.'); });
+  },undefined,(err)=>{ console.error('VRM load failed',err); fail('No se pudo cargar la mascota 3D.'); });
 
-  // blink
-  let nextBlink=performance.now()+2500, blinkT=-1;
-  function blink(now){
-    if(blinkT<0&&now>=nextBlink) blinkT=0;
-    if(blinkT>=0){ blinkT+=16; const p=blinkT/140; const v=p<0.5?p*2:(1-p)*2;
-      setMorph('eyeBlinkLeft',v); setMorph('eyeBlinkRight',v); setMorph('eyesClosed',v);
-      if(p>=1){ blinkT=-1; nextBlink=now+2000+Math.random()*4000; } }
-  }
   const clock=new THREE.Clock();
-  function animate(){
-    requestAnimationFrame(animate);
-    if(!ready){ if(renderer&&scene&&camera) renderer.render(scene,camera); return; }
-    const now=performance.now(), t=clock.getElapsedTime();
-    const tgt = talking? targetMouth : 0;
-    mouth += (tgt-mouth)*(tgt>mouth?0.5:0.2);
-    setMorph('jawOpen',mouth*0.72); setMorph('mouthOpen',mouth*0.5);
-    setMorph('viseme_aa',mouth*0.6); setMorph('viseme_O',Math.max(0,mouth-0.5)*0.4);
-    if(headBone&&headBase){ const e=new THREE.Euler(Math.sin(t*0.6)*0.02,Math.sin(t*0.4)*0.035,Math.sin(t*0.9)*0.012);
-      headBone.quaternion.copy(headBase).multiply(new THREE.Quaternion().setFromEuler(e)); }
-    blink(now);
-    renderer.render(scene,camera);
-  }
-  animate();
+  (function tick(){
+    requestAnimationFrame(tick);
+    const dt=clock.getDelta(), t=clock.elapsedTime;
+    if(vrm){
+      const em=vrm.expressionManager;
+      // LIP SYNC: RMS -> 'aa' con gain alto (caricatura = exagerado)
+      let target = Math.min(1, state.rms*15);
+      if(state.talking){                          // FLAP de respaldo: siempre se mueve al hablar
+        const flap = 0.4 + 0.4*Math.abs(Math.sin(t*11));
+        target = Math.max(target, flap*0.9);
+      } else target = 0;
+      mouth += (target-mouth)*(target>mouth?0.6:0.25);
+      em.setValue('aa', mouth);
+      em.setValue('ih', state.talking ? mouth*0.15*(0.5+0.5*Math.sin(t*7)) : 0);
+      em.setValue('happy', state.talking ? 0.18 : 0.10);   // expresión amable
+      // BLINK
+      nextBlink-=dt;
+      if(!blinking && nextBlink<=0){ blinking=true; blinkT=0; }
+      if(blinking){ blinkT+=dt; const d=0.13; blink=Math.max(0,Math.min(1, blinkT<d/2?blinkT/(d/2):1-(blinkT-d/2)/(d/2)));
+        if(blinkT>=d){ blinking=false; blink=0; nextBlink=2+Math.random()*4; } }
+      em.setValue('blink', blink);
+      // HEAD: sway idle + cabeceos al hablar
+      if(head){ const amp=state.talking?1.0:0.28;
+        head.rotation.x=(Math.sin(t*2.1)*0.05 + mouth*0.09)*amp;
+        head.rotation.y=Math.sin(t*0.7)*0.06*amp;
+        head.rotation.z=Math.sin(t*1.3)*0.02*amp; }
+      vrm.update(dt);
+    }
+    if(renderer&&scene&&camera) renderer.render(scene,camera);
+  })();
 }
 
 // ---------- Retell web call ----------
@@ -184,29 +190,27 @@ async function talk(){
     retell.on("call_ended",()=>endCall());
     retell.on("error",()=>{ setStatus("No se pudo iniciar (revisa el micrófono)"); endCall(); });
     retell.on("agent_start_talking",()=>setTalking(true));
-    retell.on("agent_stop_talking",()=>{ setTalking(false); });
+    retell.on("agent_stop_talking",()=>setTalking(false));
     retell.on("update",(u)=>{ if(u&&u.transcript){ const last=[...u.transcript].reverse().find(x=>x.role==="agent"); if(last) caption.textContent=last.content; } });
-    retell.on("audio",(f32)=>{ if(!f32||!f32.length) return; let s=0; for(let i=0;i<f32.length;i++) s+=f32[i]*f32[i]; const r=Math.sqrt(s/f32.length); targetMouth=Math.min(1,Math.max(0,(r-0.015))*11); });
+    retell.on("audio",(f32)=>{ if(!f32||!f32.length) return; let s=0; for(let i=0;i<f32.length;i++) s+=f32[i]*f32[i]; state.rms=Math.sqrt(s/f32.length); });
     await retell.startCall({ accessToken: token, emitRawAudioSamples: true });
   }catch(e){ setStatus("No se pudo iniciar la llamada"); talkBtn.disabled=false; }
 }
-function endCall(){ setTalking(false); targetMouth=0; setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null; } }
+function endCall(){ setTalking(false); setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null; } }
 
 // ---------- preview (offline) ----------
 const INTRO="Hola, soy Bianca, la asistente de Clínica Isis. Con gusto te ayudo a agendar tu cita de valoración. ¿En qué te puedo ayudar hoy?";
-let pv=null;
 function preview(){
   stopAll(); caption.textContent=""; setTalking(true); setStatus("Presentándose…");
-  pv=setInterval(()=>{ targetMouth=0.3+Math.random()*0.65; },95);
   const words=INTRO.split(" "); let i=0;
   const cap=setInterval(()=>{ caption.textContent=words.slice(0,++i).join(" "); if(i>=words.length) clearInterval(cap); },165);
-  const done=()=>{ clearInterval(pv); pv=null; targetMouth=0; setTalking(false); setStatus("Lista para atenderte"); stopBtn.disabled=true; };
+  const done=()=>{ setTalking(false); setStatus("Lista para atenderte"); stopBtn.disabled=true; };
   try{ const u=new SpeechSynthesisUtterance(INTRO); u.lang="es-419"; u.rate=1.0; u.pitch=1.05;
     const vs=speechSynthesis.getVoices()||[]; const v=vs.find(x=>/es(-|_)?(419|LA|MX|CO|US)/i.test(x.lang))||vs.find(x=>/^es/i.test(x.lang)); if(v)u.voice=v;
     u.onend=done; u.onerror=done; speechSynthesis.cancel(); speechSynthesis.speak(u); stopBtn.disabled=false;
   }catch(e){ setTimeout(done,words.length*165+400); }
 }
-function stopAll(){ if(pv){clearInterval(pv);pv=null;} try{speechSynthesis.cancel();}catch(e){} if(retell){try{retell.stopCall&&retell.stopCall();}catch(e){}retell=null;} setTalking(false); targetMouth=0; stopBtn.disabled=true; }
+function stopAll(){ try{speechSynthesis.cancel();}catch(e){} if(retell){try{retell.stopCall&&retell.stopCall();}catch(e){}retell=null;} setTalking(false); stopBtn.disabled=true; }
 
 talkBtn.addEventListener("click",talk);
 previewBtn.addEventListener("click",preview);
