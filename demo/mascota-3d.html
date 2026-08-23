@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Bianca 3D · Clínica Isis</title>
+<title>Isa · Clínica Isis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -36,11 +36,10 @@
   body.talking .status{color:var(--txt)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;
-    background:radial-gradient(120% 92% at 50% -6%,#eaf7f3 0%,#cfe9e2 46%,#a9d6ce 100%);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 -46px 90px -40px rgba(31,146,132,.35)}
+    background:radial-gradient(120% 100% at 50% 12%,#f3fbf8 0%,#daf0ea 45%,#b6e2d8 100%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 -46px 90px -40px rgba(31,146,132,.3)}
   .stage canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
-  .overlay{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:20px;
-    color:#0c2a2e;font-size:13.5px;background:rgba(224,244,239,.55);backdrop-filter:blur(2px);transition:opacity .4s}
+  .overlay{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:20px;color:#0c2a2e;font-size:13.5px;background:rgba(224,244,239,.5);transition:opacity .4s}
   .overlay .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid rgba(28,146,132,.25);border-top-color:var(--teal-d);animation:spin 1s linear infinite;margin:0 auto 12px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .overlay.hide{opacity:0;pointer-events:none}
@@ -66,115 +65,172 @@
 <body>
   <main class="shell">
     <div class="topbar">
-      <div class="brand"><span class="mark">+</span><span class="name">Clínica Isis</span><span class="sep">·</span><span class="tag">Mascota virtual 3D</span></div>
+      <div class="brand"><span class="mark">+</span><span class="name">Clínica Isis</span><span class="sep">·</span><span class="tag">Mascota virtual</span></div>
       <div class="status"><span class="live"></span><span id="statusText">Lista para atenderte</span></div>
     </div>
     <div class="stage" id="stage">
       <canvas id="canvas"></canvas>
-      <div class="overlay" id="overlay"><div><div class="spin"></div>Cargando mascota 3D…</div></div>
+      <div class="overlay" id="overlay"><div><div class="spin"></div>Preparando la mascota…</div></div>
     </div>
     <div class="transcript" id="caption"></div>
     <div class="controls">
-      <button class="primary" id="talkBtn"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Hablar con Bianca</button>
+      <button class="primary" id="talkBtn"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Hablar con la mascota</button>
       <button class="ghost" id="previewBtn"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 4v16l13-8z"/></svg> Vista previa</button>
       <button class="ghost wide" id="stopBtn" disabled><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Terminar conversación</button>
     </div>
-    <p class="hint" id="hint">Mascota 3D con voz neutra en vivo. Toca <b>Hablar con Bianca</b> (requiere micrófono) o <b>Vista previa</b>. ¿Prefieres la versión 2D? <a href="./mascota">ábrela aquí</a>.</p>
+    <p class="hint" id="hint">Una mascota que te recibe y agenda tu cita. Toca <b>Hablar</b> (requiere micrófono) o <b>Vista previa</b>. ¿Prefieres la versión 2D? <a href="./mascota">ábrela aquí</a>.</p>
   </main>
 
-<script type="importmap">
-{ "imports": {
-  "three":         "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.2/lib/three-vrm.module.js"
-}}
-</script>
 <script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
 const BACKEND = ((new URLSearchParams(location.search).get("backend")
    || "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run")).replace(/\/+$/,"");
 const TOKEN_ENDPOINT = BACKEND + "/isis-web-call";
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/pixiv/three-vrm@v3.5.2/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm';
 
 const body=document.body, canvas=document.getElementById('canvas'), stage=document.getElementById('stage');
 const overlay=document.getElementById('overlay'), statusText=document.getElementById('statusText'), caption=document.getElementById('caption');
 const talkBtn=document.getElementById('talkBtn'), previewBtn=document.getElementById('previewBtn'), stopBtn=document.getElementById('stopBtn'), hint=document.getElementById('hint');
 
-const state = { rms:0, talking:false };
+const S = { rms:0, talking:false };
 function setStatus(t,connected){ statusText.textContent=t; body.classList.toggle('connected',!!connected); }
-function setTalking(on){ state.talking=!!on; body.classList.toggle('talking',!!on); if(!on) state.rms=0; }
+function setTalking(on){ S.talking=!!on; body.classList.toggle('talking',!!on); if(!on) S.rms=0; }
 function fail(msg){ overlay.classList.remove('hide'); overlay.innerHTML='<div>'+msg+'<br><a href="./mascota">Abrir versión 2D</a></div>'; }
 
-// ---------- three.js + VRM ----------
-let renderer,scene,camera,vrm=null,head=null,mouth=0,ready=false;
-let blink=0,nextBlink=1.5,blinking=false,blinkT=0;
-try{
-  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
-}catch(e){ fail('Tu navegador no soporta 3D (WebGL).'); }
+// ================= 3D CREATURE (procedural, invented) =================
+let renderer,scene,camera;
+let mouth=0, blink=0, nextBlink=1.6, blinking=false, blinkT=0, ready=false;
+// references to animated parts
+let creature, mouthMesh, upperLid=[], eyeGroup=[], sprout, armL, armR, cheekL, cheekR;
+
+function softMat(color,rough=0.72,metal=0){ return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal}); }
+
+function buildCreature(){
+  const g = new THREE.Group();
+
+  // --- body: rounded plush bean ---
+  const bodyMat = softMat(0x64d2c1, 0.62);
+  const bodyGeo = new THREE.SphereGeometry(1, 96, 72);
+  const bodyGroup = new THREE.Group();           // squash/stretch happens here
+  const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+  bodyMesh.scale.set(1.06, 0.98, 1.0);
+  bodyGroup.add(bodyMesh);
+
+  // feet
+  const footMat = softMat(0x4fbfad,0.6);
+  for(const sx of [-1,1]){
+    const f=new THREE.Mesh(new THREE.SphereGeometry(0.24,40,28),footMat);
+    f.scale.set(1.1,0.6,1.2); f.position.set(sx*0.42,-0.95,0.32); bodyGroup.add(f);
+  }
+
+  // arms (little nubs)
+  const armMat = softMat(0x5ccbba,0.62);
+  armL=new THREE.Mesh(new THREE.SphereGeometry(0.2,36,26),armMat); armL.scale.set(0.8,1.15,0.8); armL.position.set(-1.02,-0.18,0.28);
+  armR=armL.clone(); armR.position.x=1.02; bodyGroup.add(armL,armR);
+
+  // --- eyes: big, glossy, cute ---
+  const eyeWhiteMat = new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.35});
+  const pupilMat = new THREE.MeshStandardMaterial({color:0x14232a,roughness:0.25});
+  for(const sx of [-1,1]){
+    const eg=new THREE.Group();
+    const white=new THREE.Mesh(new THREE.SphereGeometry(0.235,48,36),eyeWhiteMat); white.scale.set(0.92,1.06,0.7);
+    const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.145,40,30),pupilMat); pupil.position.set(sx*0.02,-0.01,0.16); pupil.scale.set(1,1.05,0.7);
+    const hi=new THREE.Mesh(new THREE.SphereGeometry(0.05,20,16),new THREE.MeshBasicMaterial({color:0xffffff})); hi.position.set(sx*0.05+0.04,0.07,0.28);
+    const hi2=new THREE.Mesh(new THREE.SphereGeometry(0.024,16,12),new THREE.MeshBasicMaterial({color:0xffffff})); hi2.position.set(sx*0.02-0.03,-0.03,0.28);
+    eg.add(white,pupil,hi,hi2);
+    eg.position.set(sx*0.36,0.04,0.84);
+    bodyGroup.add(eg); eyeGroup.push(eg);
+  }
+
+  // cheeks (soft blush)
+  const cheekMat=new THREE.MeshBasicMaterial({color:0xff8aa2,transparent:true,opacity:0.75});
+  cheekL=new THREE.Mesh(new THREE.SphereGeometry(0.15,32,24),cheekMat); cheekL.scale.set(1.25,0.95,0.4); cheekL.position.set(-0.62,-0.14,0.8);
+  cheekR=cheekL.clone(); cheekR.position.x=0.6; bodyGroup.add(cheekL,cheekR);
+
+  // mouth: small soft shape that opens (scaleY)
+  const mouthMat=new THREE.MeshStandardMaterial({color:0x7a3b40,roughness:0.5});
+  mouthMesh=new THREE.Mesh(new THREE.SphereGeometry(0.13,40,28),mouthMat);
+  mouthMesh.scale.set(1.15,0.14,0.5); mouthMesh.position.set(0,-0.28,0.96);
+  bodyGroup.add(mouthMesh);
+
+  // --- sprout on top (care / welcome) ---
+  sprout=new THREE.Group();
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.05,0.4,16), softMat(0x3fae97,0.6)); stem.position.y=0.2; sprout.add(stem);
+  const leaf=new THREE.Mesh(new THREE.SphereGeometry(0.2,32,24), softMat(0x86e6cf,0.55)); leaf.scale.set(0.7,1.15,0.28); leaf.position.set(0.04,0.46,0); leaf.rotation.z=-0.5; sprout.add(leaf);
+  const leaf2=leaf.clone(); leaf2.scale.set(0.5,0.9,0.24); leaf2.position.set(-0.1,0.4,0); leaf2.rotation.z=0.6; sprout.add(leaf2);
+  sprout.position.set(0.0,0.98,0.0);
+  bodyGroup.add(sprout);
+
+  g.add(bodyGroup);
+  g.userData.bodyGroup=bodyGroup;
+  creature=g; creature.userData.body=bodyGroup;
+  return g;
+}
+
+try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'}); }
+catch(e){ fail('Tu navegador no soporta 3D (WebGL).'); }
 if(renderer){
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
-  renderer.toneMapping=THREE.NoToneMapping;            // ACES lava el toon shading (MToon)
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
   scene=new THREE.Scene();
-  scene.add(new THREE.DirectionalLight(0xffffff,1.5).translateY(2));
-  const key=new THREE.DirectionalLight(0xffffff,1.4); key.position.set(0.5,2.0,1.5); scene.add(key);
-  scene.add(new THREE.AmbientLight(0xffffff,0.95));    // ambiente fuerte = look plano de caricatura
-  camera=new THREE.PerspectiveCamera(24,1,0.1,20);
+  scene.add(new THREE.HemisphereLight(0xffffff,0xcdeee7,1.15));
+  const key=new THREE.DirectionalLight(0xffffff,1.5); key.position.set(1.2,2.2,2.4); scene.add(key);
+  const fill=new THREE.DirectionalLight(0xbfe9ff,0.5); fill.position.set(-2,0.5,1.5); scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffffff,0.7); rim.position.set(0,1.5,-2.5); scene.add(rim);
+  camera=new THREE.PerspectiveCamera(30,1,0.1,50);
+  camera.position.set(0,0.12,5.7); camera.lookAt(0,0.05,0);
   function resize(){ const w=stage.clientWidth,h=stage.clientHeight; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false); }
   addEventListener('resize',resize); resize();
 
-  const loader=new GLTFLoader();
-  loader.register(parser=>new VRMLoaderPlugin(parser));
-  loader.load(MODEL_URL,(gltf)=>{
-    vrm=gltf.userData.vrm;
-    try{ VRMUtils.rotateVRM0(vrm); }catch(e){}
-    vrm.scene.traverse(o=>o.frustumCulled=false);
-    scene.add(vrm.scene);
-    head=vrm.humanoid.getNormalizedBoneNode('head');
-    // frame head-and-shoulders around the actual head height
-    const hp=new THREE.Vector3(); (head||vrm.scene).getWorldPosition(hp);
-    const y=head?hp.y:1.4;
-    camera.position.set(0,y+0.02,0.98); camera.lookAt(0,y-0.02,0);
-    ready=true; overlay.classList.add('hide');
-  },undefined,(err)=>{ console.error('VRM load failed',err); fail('No se pudo cargar la mascota 3D.'); });
+  scene.add(buildCreature());
+  ready=true; setTimeout(()=>overlay.classList.add('hide'),120);
 
   const clock=new THREE.Clock();
   (function tick(){
     requestAnimationFrame(tick);
     const dt=clock.getDelta(), t=clock.elapsedTime;
-    if(vrm){
-      const em=vrm.expressionManager;
-      // LIP SYNC: RMS -> 'aa' con gain alto (caricatura = exagerado)
-      let target = Math.min(1, state.rms*15);
-      if(state.talking){                          // FLAP de respaldo: siempre se mueve al hablar
-        const flap = 0.4 + 0.4*Math.abs(Math.sin(t*11));
-        target = Math.max(target, flap*0.9);
-      } else target = 0;
-      mouth += (target-mouth)*(target>mouth?0.6:0.25);
-      em.setValue('aa', mouth);
-      em.setValue('ih', state.talking ? mouth*0.15*(0.5+0.5*Math.sin(t*7)) : 0);
-      em.setValue('happy', state.talking ? 0.18 : 0.10);   // expresión amable
-      // BLINK
+    if(ready&&creature){
+      const bg=creature.userData.body;
+      // --- mouth (natural talk): amplitude + soft flap fallback while talking ---
+      let target = Math.min(1, S.rms*16);
+      if(S.talking){ const flap=0.45+0.4*Math.abs(Math.sin(t*9.5)); target=Math.max(target,flap); }
+      else target=0;
+      mouth += (target-mouth)*(target>mouth?0.55:0.22);
+      mouthMesh.scale.y = 0.14 + mouth*0.62;
+      mouthMesh.scale.x = 1.15 - mouth*0.25;      // narrows as it opens -> rounder "o"
+      mouthMesh.position.y = -0.28 - mouth*0.05;
+
+      // --- squash & stretch + gentle float (breathing) ---
+      const breathe = Math.sin(t*1.9)*0.02;
+      const talkPulse = mouth*0.05;
+      bg.scale.y = 1 + breathe + talkPulse;
+      bg.scale.x = 1 - breathe*0.6 - talkPulse*0.5;
+      bg.scale.z = 1 - breathe*0.6 - talkPulse*0.5;
+      creature.position.y = -0.02 + Math.sin(t*1.5)*0.05 + mouth*0.03;
+
+      // --- head/body lean & sway (livelier while talking) ---
+      const amp = S.talking?1:0.35;
+      creature.rotation.z = Math.sin(t*0.8)*0.03*amp;
+      creature.rotation.x = (Math.sin(t*1.7)*0.02 + mouth*0.04)*amp;
+      creature.rotation.y = Math.sin(t*0.5)*0.05*amp;
+
+      // --- sprout & arms wiggle ---
+      if(sprout){ sprout.rotation.z = Math.sin(t*2.2)*0.12*amp; sprout.rotation.x=Math.sin(t*1.6)*0.05; }
+      if(armL&&armR){ armL.rotation.z = 0.2+Math.sin(t*2.6)*0.18*amp; armR.rotation.z = -0.2-Math.sin(t*2.6+0.6)*0.18*amp; }
+
+      // --- blink ---
       nextBlink-=dt;
-      if(!blinking && nextBlink<=0){ blinking=true; blinkT=0; }
-      if(blinking){ blinkT+=dt; const d=0.13; blink=Math.max(0,Math.min(1, blinkT<d/2?blinkT/(d/2):1-(blinkT-d/2)/(d/2)));
-        if(blinkT>=d){ blinking=false; blink=0; nextBlink=2+Math.random()*4; } }
-      em.setValue('blink', blink);
-      // HEAD: sway idle + cabeceos al hablar
-      if(head){ const amp=state.talking?1.0:0.28;
-        head.rotation.x=(Math.sin(t*2.1)*0.05 + mouth*0.09)*amp;
-        head.rotation.y=Math.sin(t*0.7)*0.06*amp;
-        head.rotation.z=Math.sin(t*1.3)*0.02*amp; }
-      vrm.update(dt);
+      if(!blinking&&nextBlink<=0){ blinking=true; blinkT=0; }
+      if(blinking){ blinkT+=dt; const d=0.14; blink=Math.max(0,Math.min(1, blinkT<d/2?blinkT/(d/2):1-(blinkT-d/2)/(d/2)));
+        if(blinkT>=d){ blinking=false; blink=0; nextBlink=2+Math.random()*3.5; } }
+      for(const eg of eyeGroup){ eg.scale.y = 1 - blink*0.9; }
     }
-    if(renderer&&scene&&camera) renderer.render(scene,camera);
+    if(renderer) renderer.render(scene,camera);
   })();
 }
 
-// ---------- Retell web call ----------
+// ================= Retell web call =================
 let retell=null;
 async function loadRetell(){ if(window.__RWC) return window.__RWC; const m=await import("https://esm.sh/retell-client-js-sdk@2"); return (window.__RWC=m.RetellWebClient); }
 async function talk(){
@@ -192,20 +248,20 @@ async function talk(){
     retell.on("agent_start_talking",()=>setTalking(true));
     retell.on("agent_stop_talking",()=>setTalking(false));
     retell.on("update",(u)=>{ if(u&&u.transcript){ const last=[...u.transcript].reverse().find(x=>x.role==="agent"); if(last) caption.textContent=last.content; } });
-    retell.on("audio",(f32)=>{ if(!f32||!f32.length) return; let s=0; for(let i=0;i<f32.length;i++) s+=f32[i]*f32[i]; state.rms=Math.sqrt(s/f32.length); });
+    retell.on("audio",(f32)=>{ if(!f32||!f32.length) return; let s=0; for(let i=0;i<f32.length;i++) s+=f32[i]*f32[i]; S.rms=Math.sqrt(s/f32.length); });
     await retell.startCall({ accessToken: token, emitRawAudioSamples: true });
   }catch(e){ setStatus("No se pudo iniciar la llamada"); talkBtn.disabled=false; }
 }
 function endCall(){ setTalking(false); setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null; } }
 
-// ---------- preview (offline) ----------
-const INTRO="Hola, soy Bianca, la asistente de Clínica Isis. Con gusto te ayudo a agendar tu cita de valoración. ¿En qué te puedo ayudar hoy?";
+// ================= preview (offline) =================
+const INTRO="Hola, soy la asistente de Clínica Isis. Con gusto te ayudo a agendar tu cita de valoración. ¿En qué te puedo ayudar hoy?";
 function preview(){
   stopAll(); caption.textContent=""; setTalking(true); setStatus("Presentándose…");
   const words=INTRO.split(" "); let i=0;
   const cap=setInterval(()=>{ caption.textContent=words.slice(0,++i).join(" "); if(i>=words.length) clearInterval(cap); },165);
   const done=()=>{ setTalking(false); setStatus("Lista para atenderte"); stopBtn.disabled=true; };
-  try{ const u=new SpeechSynthesisUtterance(INTRO); u.lang="es-419"; u.rate=1.0; u.pitch=1.05;
+  try{ const u=new SpeechSynthesisUtterance(INTRO); u.lang="es-419"; u.rate=1.0; u.pitch=1.1;
     const vs=speechSynthesis.getVoices()||[]; const v=vs.find(x=>/es(-|_)?(419|LA|MX|CO|US)/i.test(x.lang))||vs.find(x=>/^es/i.test(x.lang)); if(v)u.voice=v;
     u.onend=done; u.onerror=done; speechSynthesis.cancel(); speechSynthesis.speak(u); stopBtn.disabled=false;
   }catch(e){ setTimeout(done,words.length*165+400); }
