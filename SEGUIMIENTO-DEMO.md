@@ -20,6 +20,22 @@ Backend redeployado en Modal (`agente-voz-ghl` + `-worker`, cuenta dineroconscie
 2. **Contacto fantasma:** `_resolve_caller_contact` hacía `upsert` (escritura) para identificar a quien llama → creaba un contacto vacío si no existía. Ahora usa `ghl_read.find_contact_by_phone` (solo lectura) y devuelve `str | None`.
 3. **Repoint silencioso:** si faltaba `TWILIO_PHONE_NUMBER`, el número no se repuntaba **sin avisar** (bug V07/V09). Ahora emite `LOG.warning` explícito.
 
+## MVP para el cierre de Clínica Isis (lunes) — construyendo, en orden: mascota-voz → chat interno → checklist
+Decisión del operador: construir los MVPs (contra la recomendación "solo discovery" del análisis — advertencia registrada). Se hace reversible y SIN tocar el demo Aurora en vivo.
+
+### ✅ MVP #1 — "Bianca", mascota con voz de Clínica Isis (COMPLETO y verificado)
+- Agente Retell **separado** (`agent_ae9bce89c54c26f046c9950444`, llm `llm_b410de87c56827a9e3db79503136`), no toca Aurora.
+- Voz **neutra latinoamericana** `cartesia-Hailey` (requisito #1 del dueño: nada cachaco), expresiva (temp 1.1 + backchannel), velocidad natural 1.0.
+- Multi-especialidad (IPS, triage por área + paciente existente con servicio nuevo), identidad "experiencia Isis", guardrails clínicos intactos.
+- Nombre **"Bianca" es PLACEHOLDER** — el nombre italiano real (no negociable) lo trae Ariel; se cambia en un solo valor (`MASCOTA_NAME` en `scripts/build_isis_agent.py`).
+- Verificado por subagente de gstack; aplicados 8 hallazgos (crítico: quitado "tantito"; embudo de valoración pagada gateado a cirugía/estética; guardrail de resultados generalizado; regionalismos fuera).
+- Archivos: `prompts/isis.yaml`, `scripts/build_isis_agent.py`. Prompt en vivo v1.
+- **Cómo probar:** Retell → "Isis · Bianca (MVP demo)" → llamada web. Para demo por teléfono el lunes: falta número dedicado (no tocar el de Aurora).
+- **Pendiente cliente:** confirmar nombre italiano real; confirmar financiación (Welli/Servicredito) y catálogo/precios reales; Ley 1581 (aviso habeas data) es item de producción, no bloquea el demo.
+
+### ⏳ MVP #2 — chat interno · ⏳ MVP #3 — checklist con trazabilidad
+Pendientes. Nota del análisis: el "chat tipo Slack" NO resuelve el dolor real (genera más conversación no trazable); lo que mata el Dolor #1 es un **registro estructurado por paciente/procedimiento con campos obligatorios y firma de turno** — construir el checklist así (módulo reutilizable de la vertical clínicas). whatsapp-saas está EN PRODUCCIÓN en EasyPanel: no desplegar sin cuidado.
+
 ## Auditoría del backend — 2º pase (outbound + post-llamada + dashboard) — FIXES aplicados
 Segundo agente de auditoría sobre las superficies que el 1º no cubrió. Confirmó OK: auth del panel (token constant-time, ninguna ruta se salta el check), streaming de grabación tras token, publish→repoint, análisis Anthropic (parse robusto), `prompt_history` en `modal.Dict`, imagen de Modal (config+prompts añadidos, sufijo `::modal_app`, worker aparte). Hallazgos corregidos + redeploy + 10 tests de regresión (`tests/test_post_call_resolve.py`):
 1. **[HIGH] Contacto equivocado en el análisis post-llamada (outbound / línea de desvío).** `_resolve_contact_id` caía a `from_number` = el número **propio de la clínica** en outbound → escribía el resumen/score en un contacto basura y el paciente real se quedaba sin nada. Ahora usa `metadata.contact_id` (que el worker ya manda) y, si no, la **línea de registro** direccional/anti-desvío (`_line_number`) — el MISMO contacto que escribió el booking.
