@@ -326,7 +326,7 @@
     try{
       retell = new RWC();
       gotAudio=false;
-      retell.on("call_started", ()=>{ setStatus("En llamada — háblale", true); stopBtn.disabled=false; try{ retell.startAudioPlayback && retell.startAudioPlayback(); }catch(e){} });
+      retell.on("call_started", ()=>{ setStatus("En llamada · háblale", true); stopBtn.disabled=false; try{ retell.startAudioPlayback && retell.startAudioPlayback(); }catch(e){} });
       retell.on("call_ended", ()=>{ endCall(); });
       // startCall atrapa sus propios errores (mic denegado, fallo de conexión) y
       // emite "error" en vez de lanzar — sin este listener el botón "no hace nada".

@@ -4,19 +4,23 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Comunicación Interna · Clínica Isis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c1b1f; --panel:#0f272e; --panel2:#12313a; --line:#1d3a43;
-    --teal:#2fb7a6; --teal-d:#1f8f82; --txt:#eaf3f2; --muted:#8fb3af;
-    --chipbg:#123039; --mine:#1f6f64; --other:#16323a; --amber:#f2b84a;
+    --bg:#081316; --bg-2:#0b1c20; --panel:#0c1e23; --panel2:#12292f;
+    --line:rgba(148,204,196,.12); --line-2:rgba(148,204,196,.07);
+    --teal:#35c2b0; --teal-d:#1c9184; --txt:#eff6f4; --muted:#a9c6c1; --muted-2:#7fa39d;
+    --chipbg:rgba(255,255,255,.05); --mine:#1c7a6d; --other:rgba(255,255,255,.045); --amber:#f4c452;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-    background:radial-gradient(1000px 600px at 15% -10%,#153a42,var(--bg) 60%);color:var(--txt);min-height:100dvh}
-  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--line);background:rgba(9,22,26,.6);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
-  .logo .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
-  header small{color:var(--muted);font-weight:500}
+  body{margin:0;font-family:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-0.006em;
+    background:radial-gradient(900px 520px at 82% -8%,rgba(53,194,176,.12),transparent 60%),radial-gradient(700px 480px at 6% 108%,rgba(255,143,118,.06),transparent 55%),linear-gradient(180deg,var(--bg-2),var(--bg));color:var(--txt);min-height:100dvh}
+  header{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:15px 22px;border-bottom:1px solid var(--line);background:rgba(8,19,22,.72);backdrop-filter:blur(14px) saturate(1.1);position:sticky;top:0;z-index:5}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-0.01em}
+  .logo .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(140deg,var(--teal),var(--teal-d));box-shadow:0 4px 12px -3px rgba(53,194,176,.6)}
+  header small{color:var(--muted-2);font-weight:500}
   .spacer{flex:1}
   select{font:inherit;background:var(--chipbg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
   .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
@@ -71,7 +75,7 @@
   <section class="main">
     <div class="mhead" id="mhead"></div>
     <div class="msgs" id="msgs"></div>
-    <div class="note">Todo mensaje queda <b>registrado con autor, hora y contra el caso del paciente</b> — a diferencia de un chat de WhatsApp suelto, aquí la conversación no se pierde entre turnos y cualquiera que entra al caso ve el hilo completo. Los permisos por rol se aplican en producción.</div>
+    <div class="note">Todo mensaje queda <b>registrado con autor, hora y contra el caso del paciente</b>. A diferencia de un chat de WhatsApp suelto, aquí la conversación no se pierde entre turnos y cualquiera que entra al caso ve el hilo completo. Los permisos por rol se aplican en producción.</div>
     <div class="compose"><input id="inp" placeholder="Escribe un mensaje…" autocomplete="off"/><button id="send">Enviar</button></div>
   </section>
 </div>
@@ -102,7 +106,7 @@
       {a:"Enfermería", b:"Consentimiento firmado y escaneado. Todo listo de mi lado.", t:"06:55", d:"hoy"},
     ],
     "caso-lg":[
-      {a:"Recepción · turno mañana", b:"Pendiente valoración preanestésica — la agendo para primera hora.", t:"07:15", d:"hoy"},
+      {a:"Recepción · turno mañana", b:"Pendiente valoración preanestésica; la agendo para primera hora.", t:"07:15", d:"hoy"},
     ],
   };
   let state; try{ state=JSON.parse(localStorage.getItem(KEY))||null; }catch(e){ state=null; }

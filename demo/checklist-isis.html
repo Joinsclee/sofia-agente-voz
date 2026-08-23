@@ -4,20 +4,24 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Programación Quirúrgica · Clínica Isis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c1b1f; --panel:#0f272e; --panel2:#12313a; --line:#1d3a43;
-    --teal:#2fb7a6; --teal-d:#1f8f82; --txt:#eaf3f2; --muted:#8fb3af;
-    --red:#ff6b5e; --amber:#f2b84a; --green:#37d39b;
-    --chipbg:#123039; --ease:cubic-bezier(.23,1,.32,1);
+    --bg:#081316; --bg-2:#0b1c20; --panel:#0c1e23; --panel2:#12292f;
+    --line:rgba(148,204,196,.12); --line-2:rgba(148,204,196,.07);
+    --teal:#35c2b0; --teal-d:#1c9184; --txt:#eff6f4; --muted:#a9c6c1; --muted-2:#7fa39d;
+    --red:#ff7a6b; --amber:#f4c452; --green:#3ad39b;
+    --chipbg:rgba(255,255,255,.05); --ease:cubic-bezier(.23,1,.32,1); --radius:14px;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-    background:radial-gradient(1000px 600px at 15% -10%,#153a42,var(--bg) 60%);color:var(--txt);min-height:100dvh}
-  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 22px;border-bottom:1px solid var(--line);background:rgba(9,22,26,.6);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
-  .logo .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
-  header small{color:var(--muted);font-weight:500}
+  body{margin:0;font-family:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-0.006em;
+    background:radial-gradient(900px 520px at 82% -8%,rgba(53,194,176,.12),transparent 60%),radial-gradient(700px 480px at 6% 108%,rgba(255,143,118,.06),transparent 55%),linear-gradient(180deg,var(--bg-2),var(--bg));color:var(--txt);min-height:100dvh}
+  header{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:15px 22px;border-bottom:1px solid var(--line);background:rgba(8,19,22,.72);backdrop-filter:blur(14px) saturate(1.1);position:sticky;top:0;z-index:5}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-0.01em}
+  .logo .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(140deg,var(--teal),var(--teal-d));box-shadow:0 4px 12px -3px rgba(53,194,176,.6)}
+  header small{color:var(--muted-2);font-weight:500}
   .spacer{flex:1}
   .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
   select,button{font:inherit}
@@ -28,7 +32,7 @@
   .daybar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
   .daybar button{background:var(--chipbg);border:1px solid var(--line);color:var(--txt);border-radius:999px;padding:8px 14px;cursor:pointer}
   .daybar button.active{background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f;border-color:transparent;font-weight:700}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 24px 60px -34px rgba(0,0,0,.75)}
   .row{display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
   .row:last-child{border-bottom:0}
   .row:hover{background:var(--panel2)}
@@ -40,7 +44,7 @@
   .row .sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .row .count{font-size:12px;color:var(--muted);background:var(--chipbg);border-radius:999px;padding:3px 9px}
   /* detail */
-  .detail{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 18px;min-height:200px}
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;min-height:200px;box-shadow:0 24px 60px -34px rgba(0,0,0,.75)}
   .detail .head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
   .detail .head b{font-size:17px}
   .detail .proc{color:var(--muted);font-size:13px;margin-bottom:14px}
@@ -99,7 +103,7 @@
   </section>
 </div>
 <div class="foot">
-  <span class="pill">Demo · datos de ejemplo</span> &nbsp; El semáforo por paciente y el <b>historial inmutable con firma de turno</b> son la evidencia de trazabilidad que pide una IPS certificada ISO&nbsp;9001. Una cirugía no puede marcarse <b>lista</b> si falta un requisito crítico (prótesis, exámenes o consentimiento) — así deja de caerse una cirugía porque "creí que la del turno anterior ya lo había hecho".
+  <span class="pill">Demo · datos de ejemplo</span> &nbsp; El semáforo por paciente y el <b>historial inmutable con firma de turno</b> son la evidencia de trazabilidad que pide una IPS certificada ISO&nbsp;9001. Una cirugía no puede marcarse <b>lista</b> si falta un requisito crítico (prótesis, exámenes o consentimiento). Así deja de caerse una cirugía porque "creí que la del turno anterior ya lo había hecho".
 </div>
 
 <script>
@@ -178,9 +182,9 @@
       html+=`<div class="item"><div class="cbx ${on?'on':''}" data-k="${it.k}">${CHECK}</div>
         <div class="lbl"><div class="t">${it.t}${it.req?'<span class="req">*</span>':''}</div>${by}</div></div>`;
     });
-    const b = st.s==="green" ? {c:"green",t:"✓ Lista para cirugía — todos los requisitos completos"} :
-              st.s==="red" ? {c:"red",t:"● Faltan requisitos críticos — no entregar como lista"} :
-              {c:"amber",t:"● En preparación — faltan requisitos por confirmar"};
+    const b = st.s==="green" ? {c:"green",t:"✓ Lista para cirugía · todos los requisitos completos"} :
+              st.s==="red" ? {c:"red",t:"● Faltan requisitos críticos · no entregar como lista"} :
+              {c:"amber",t:"● En preparación · faltan requisitos por confirmar"};
     html+=`<div class="banner ${b.c}">${b.t}</div>`;
     html+=`<div class="handoff">
       <button class="btn primary" id="handoffBtn" ${st.s!=="green"?"disabled":""}>Entregar turno como lista ✍</button>
