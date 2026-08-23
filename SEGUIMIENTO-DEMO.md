@@ -41,8 +41,13 @@ Aclaración del operador: la mascota es un **personaje visual que gesticula mien
 - **Cómo probar:** Retell → "Isis · Bianca (MVP demo)" → llamada web. Para demo por teléfono el lunes: falta número dedicado (no tocar el de Aurora).
 - **Pendiente cliente:** confirmar nombre italiano real; confirmar financiación (Welli/Servicredito) y catálogo/precios reales; Ley 1581 (aviso habeas data) es item de producción, no bloquea el demo.
 
-### ⏳ MVP #2 — chat interno · ⏳ MVP #3 — checklist con trazabilidad
-Pendientes. Nota del análisis: el "chat tipo Slack" NO resuelve el dolor real (genera más conversación no trazable); lo que mata el Dolor #1 es un **registro estructurado por paciente/procedimiento con campos obligatorios y firma de turno** — construir el checklist así (módulo reutilizable de la vertical clínicas). whatsapp-saas está EN PRODUCCIÓN en EasyPanel: no desplegar sin cuidado.
+### ✅ MVP #3 — Checklist con trazabilidad quirúrgica (COMPLETO, en vivo)
+**Demo:** `…/checklist`. Cirugías del día con **semáforo por paciente**; checklist con campos obligatorios (exámenes, preanestésica, consentimiento, prótesis) que **gatean** el estado "lista para cirugía"; cada ítem registra **quién lo marcó y cuándo**; **entrega de turno firmada** e **historial inmutable**. Es la respuesta directa al Dolor #1 (cirugías canceladas por traspaso roto entre turnos) en lenguaje ISO 9001. Selector de rol/turno para demostrar la firma. `demo/checklist-isis.html`, ruta `GET /checklist`. Datos de ejemplo, sin PHI. Verificado (screenshot + lógica de semáforo/gate).
+
+### ✅ MVP #2 — Chat interno por caso (COMPLETO, en vivo)
+**Demo:** `…/chat-interno`. Canales (Recepción, Programación quirúrgica, Líderes 🔒) + **hilos por caso de paciente**; cada mensaje queda **con autor, hora y contra el caso** (no un WhatsApp suelto — atiende la observación del análisis de que un chat suelto genera conversación no trazable). Restricción por rol demostrada. `demo/chat-interno-isis.html`, ruta `GET /chat-interno`. Verificado (screenshot).
+
+> Nota: construidos como **demos autocontenidos** servidos por el backend (no en la mini-app `Centro de Control`, que no tiene auth ni está desplegada — evitar riesgo de producción). Para producción, el checklist es el módulo reutilizable de la vertical clínicas (requiere auth + RLS + escrituras server-side, ver mapa).
 
 ## Auditoría del backend — 2º pase (outbound + post-llamada + dashboard) — FIXES aplicados
 Segundo agente de auditoría sobre las superficies que el 1º no cubrió. Confirmó OK: auth del panel (token constant-time, ninguna ruta se salta el check), streaming de grabación tras token, publish→repoint, análisis Anthropic (parse robusto), `prompt_history` en `modal.Dict`, imagen de Modal (config+prompts añadidos, sufijo `::modal_app`, worker aparte). Hallazgos corregidos + redeploy + 10 tests de regresión (`tests/test_post_call_resolve.py`):

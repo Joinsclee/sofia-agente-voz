@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Programación Quirúrgica · Clínica Isis</title>
+<style>
+  :root{
+    --bg:#0c1b1f; --panel:#0f272e; --panel2:#12313a; --line:#1d3a43;
+    --teal:#2fb7a6; --teal-d:#1f8f82; --txt:#eaf3f2; --muted:#8fb3af;
+    --red:#ff6b5e; --amber:#f2b84a; --green:#37d39b;
+    --chipbg:#123039; --ease:cubic-bezier(.23,1,.32,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(1000px 600px at 15% -10%,#153a42,var(--bg) 60%);color:var(--txt);min-height:100dvh}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 22px;border-bottom:1px solid var(--line);background:rgba(9,22,26,.6);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
+  .logo .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
+  header small{color:var(--muted);font-weight:500}
+  .spacer{flex:1}
+  .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  select,button{font:inherit}
+  select{background:var(--chipbg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .wrap{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;padding:20px 22px;max-width:1080px;margin:0 auto}
+  @media(max-width:820px){.wrap{grid-template-columns:1fr}}
+  h2{font-size:14px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+  .daybar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .daybar button{background:var(--chipbg);border:1px solid var(--line);color:var(--txt);border-radius:999px;padding:8px 14px;cursor:pointer}
+  .daybar button.active{background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f;border-color:transparent;font-weight:700}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:var(--panel2)}
+  .row.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--teal)}
+  .sem{width:14px;height:14px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+  .sem.red{background:var(--red);box-shadow:0 0 10px var(--red)} .sem.amber{background:var(--amber)} .sem.green{background:var(--green);box-shadow:0 0 10px var(--green)}
+  .row .meta{flex:1;min-width:0}
+  .row .name{font-weight:700}
+  .row .sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .count{font-size:12px;color:var(--muted);background:var(--chipbg);border-radius:999px;padding:3px 9px}
+  /* detail */
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 18px;min-height:200px}
+  .detail .head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .detail .head b{font-size:17px}
+  .detail .proc{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .item{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .item:last-of-type{border-bottom:0}
+  .cbx{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);flex:0 0 auto;cursor:pointer;display:grid;place-items:center;transition:.15s;background:var(--chipbg)}
+  .cbx.on{background:var(--green);border-color:var(--green)}
+  .cbx svg{opacity:0;transition:.15s} .cbx.on svg{opacity:1}
+  .item .lbl{flex:1}
+  .item .lbl .t{font-weight:600}
+  .item .lbl .t .req{color:var(--red);font-weight:800;margin-left:3px}
+  .item .lbl .by{font-size:12px;color:var(--muted);margin-top:2px}
+  .banner{border-radius:12px;padding:11px 13px;margin:14px 0;font-weight:600;font-size:14px;display:flex;gap:9px;align-items:center}
+  .banner.red{background:rgba(255,107,94,.13);color:#ffb3aa;border:1px solid rgba(255,107,94,.3)}
+  .banner.amber{background:rgba(242,184,74,.12);color:#f5cf88;border:1px solid rgba(242,184,74,.3)}
+  .banner.green{background:rgba(55,211,155,.12);color:#8ff0cc;border:1px solid rgba(55,211,155,.3)}
+  .handoff{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .btn{border:0;border-radius:11px;padding:11px 16px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f}
+  .btn.primary[disabled]{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:var(--chipbg);color:var(--txt);border:1px solid var(--line)}
+  .log{margin-top:16px}
+  .log h3{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 8px}
+  .log .entry{font-size:12.5px;color:var(--muted);padding:5px 0;border-top:1px solid var(--line);display:flex;gap:8px}
+  .log .entry .whoi{color:var(--teal);font-weight:600}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px}
+  .foot{max-width:1080px;margin:0 auto;padding:6px 22px 26px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .pill{display:inline-block;background:var(--chipbg);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"></span>Clínica&nbsp;Isis <small>· Programación quirúrgica</small></div>
+  <div class="spacer"></div>
+  <div class="who">Estás como
+    <select id="who">
+      <option>Recepción · turno mañana</option>
+      <option>Recepción · turno tarde</option>
+      <option>Enfermería</option>
+      <option>Líder de sede</option>
+    </select>
+  </div>
+</header>
+
+<div class="wrap">
+  <section>
+    <h2>Cirugías del día</h2>
+    <div class="daybar" id="daybar"></div>
+    <div class="card" id="list"></div>
+  </section>
+  <section>
+    <h2>Checklist del paciente</h2>
+    <div class="detail" id="detail"><div class="empty">Selecciona una cirugía de la lista para ver y completar su checklist.</div></div>
+  </section>
+</div>
+<div class="foot">
+  <span class="pill">Demo · datos de ejemplo</span> &nbsp; El semáforo por paciente y el <b>historial inmutable con firma de turno</b> son la evidencia de trazabilidad que pide una IPS certificada ISO&nbsp;9001. Una cirugía no puede marcarse <b>lista</b> si falta un requisito crítico (prótesis, exámenes o consentimiento) — así deja de caerse una cirugía porque "creí que la del turno anterior ya lo había hecho".
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const CHECK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04231f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+  // --- Demo data: checklist items (critical ones gate "listo") ---
+  const ITEMS = [
+    {k:"examenes", t:"Exámenes prequirúrgicos recibidos", req:true},
+    {k:"preanest", t:"Valoración preanestésica", req:true},
+    {k:"consent",  t:"Consentimiento informado firmado", req:true},
+    {k:"protesis", t:"Prótesis / insumos confirmados", req:true, onlyIf:"needsProtesis"},
+    {k:"ayuno",    t:"Ayuno informado al paciente", req:false},
+    {k:"acomp",    t:"Acompañante confirmado", req:false},
+  ];
+  const SEED = [
+    {id:"p1", code:"Paciente A. M.", proc:"Mamoplastia de aumento", hora:"07:30", cir:"Dr. Ramírez", needsProtesis:true},
+    {id:"p2", code:"Paciente L. G.", proc:"Rinoplastia", hora:"09:00", cir:"Dra. Salazar", needsProtesis:false},
+    {id:"p3", code:"Paciente C. R.", proc:"Lipoescultura", hora:"11:00", cir:"Dr. Ramírez", needsProtesis:false},
+    {id:"p4", code:"Paciente J. P.", proc:"Blefaroplastia", hora:"14:00", cir:"Dra. Salazar", needsProtesis:false},
+  ];
+  const DAYS = ["Hoy","Mañana","Miércoles"];
+  const KEY = "isis_checklist_demo_v1";
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ return {}; } }
+  function save(s){ try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch(e){} }
+  let state = load();
+  let day = 0, selId = null;
+
+  function pkey(id){ return day+":"+id; }
+  function rec(id){ return state[pkey(id)] || (state[pkey(id)] = {items:{}, log:[], handoff:null}); }
+  function items(p){ return ITEMS.filter(it=>!it.onlyIf || p[it.onlyIf]); }
+  function now(){ const d=new Date(); return d.toLocaleString("es-CO",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"}); }
+  function who(){ return document.getElementById("who").value; }
+
+  function status(p){
+    const r=rec(p.id); const list=items(p);
+    const reqs=list.filter(i=>i.req);
+    const doneReq=reqs.filter(i=>r.items[i.k]);
+    const doneAny=list.filter(i=>r.items[i.k]);
+    if(doneReq.length===reqs.length) return {s:"green", txt:"Lista para cirugía", done:doneAny.length, total:list.length};
+    if(doneAny.length===0) return {s:"red", txt:"Sin preparar", done:0, total:list.length};
+    return {s:"amber", txt:"En preparación", done:doneAny.length, total:list.length};
+  }
+
+  function renderDays(){
+    const bar=document.getElementById("daybar"); bar.innerHTML="";
+    DAYS.forEach((d,i)=>{ const b=document.createElement("button"); b.textContent=d; if(i===day)b.className="active";
+      b.onclick=()=>{day=i;selId=null;renderList();renderDetail();}; bar.appendChild(b); });
+  }
+  function renderList(){
+    renderDays();
+    const el=document.getElementById("list"); el.innerHTML="";
+    SEED.forEach(p=>{
+      const st=status(p);
+      const row=document.createElement("div"); row.className="row"+(p.id===selId?" sel":"");
+      row.onclick=()=>{selId=p.id;renderList();renderDetail();};
+      row.innerHTML=`<span class="sem ${st.s}"></span>
+        <div class="meta"><div class="name">${p.code}</div><div class="sub">${p.hora} · ${p.proc} · ${p.cir}</div></div>
+        <span class="count">${st.done}/${st.total}</span>`;
+      el.appendChild(row);
+    });
+  }
+
+  function renderDetail(){
+    const el=document.getElementById("detail");
+    const p=SEED.find(x=>x.id===selId);
+    if(!p){ el.innerHTML='<div class="empty">Selecciona una cirugía de la lista para ver y completar su checklist.</div>'; return; }
+    const r=rec(p.id); const list=items(p); const st=status(p);
+    let html=`<div class="head"><span class="sem ${st.s}"></span><b>${p.code}</b></div>
+      <div class="proc">${p.hora} · ${p.proc} · ${p.cir}</div>`;
+    list.forEach(it=>{
+      const on=!!r.items[it.k];
+      const by=on&&r.items[it.k].by?`<div class="by">✓ ${r.items[it.k].by} · ${r.items[it.k].at}</div>`:"";
+      html+=`<div class="item"><div class="cbx ${on?'on':''}" data-k="${it.k}">${CHECK}</div>
+        <div class="lbl"><div class="t">${it.t}${it.req?'<span class="req">*</span>':''}</div>${by}</div></div>`;
+    });
+    const b = st.s==="green" ? {c:"green",t:"✓ Lista para cirugía — todos los requisitos completos"} :
+              st.s==="red" ? {c:"red",t:"● Faltan requisitos críticos — no entregar como lista"} :
+              {c:"amber",t:"● En preparación — faltan requisitos por confirmar"};
+    html+=`<div class="banner ${b.c}">${b.t}</div>`;
+    html+=`<div class="handoff">
+      <button class="btn primary" id="handoffBtn" ${st.s!=="green"?"disabled":""}>Entregar turno como lista ✍</button>
+      <button class="btn ghost" id="noteBtn">Registrar nota de turno</button></div>`;
+    if(r.handoff) html+=`<div class="banner green">Turno entregado por <b>${r.handoff.by}</b> · ${r.handoff.at}</div>`;
+    html+=`<div class="log"><h3>Historial (inmutable)</h3>`;
+    if(!r.log.length) html+=`<div class="entry">Sin movimientos aún.</div>`;
+    else [...r.log].reverse().forEach(e=>{ html+=`<div class="entry"><span>${e.at}</span><span class="whoi">${e.by}</span><span>${e.what}</span></div>`; });
+    html+=`</div>`;
+    el.innerHTML=html;
+
+    el.querySelectorAll(".cbx").forEach(c=>c.onclick=()=>toggle(p, c.getAttribute("data-k")));
+    const hb=el.querySelector("#handoffBtn"); if(hb) hb.onclick=()=>handoff(p);
+    el.querySelector("#noteBtn").onclick=()=>note(p);
+  }
+
+  function toggle(p, k){
+    const r=rec(p.id); const it=ITEMS.find(i=>i.k===k);
+    if(r.items[k]){ delete r.items[k]; r.log.push({at:now(),by:who(),what:`desmarcó "${it.t}"`}); }
+    else { r.items[k]={by:who(),at:now()}; r.log.push({at:now(),by:who(),what:`marcó "${it.t}"`}); }
+    save(state); renderList(); renderDetail();
+  }
+  function handoff(p){
+    const r=rec(p.id); r.handoff={by:who(),at:now()};
+    r.log.push({at:now(),by:who(),what:"ENTREGÓ el turno con la cirugía marcada como LISTA"});
+    save(state); renderList(); renderDetail();
+  }
+  function note(p){
+    const txt=prompt("Nota de turno para "+p.code+":"); if(!txt) return;
+    rec(p.id).log.push({at:now(),by:who(),what:"nota: "+txt}); save(state); renderDetail();
+  }
+
+  document.getElementById("who").onchange=()=>{};
+  renderList(); renderDetail();
+})();
+</script>
+</body>
+</html>

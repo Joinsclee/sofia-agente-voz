@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Comunicación Interna · Clínica Isis</title>
+<style>
+  :root{
+    --bg:#0c1b1f; --panel:#0f272e; --panel2:#12313a; --line:#1d3a43;
+    --teal:#2fb7a6; --teal-d:#1f8f82; --txt:#eaf3f2; --muted:#8fb3af;
+    --chipbg:#123039; --mine:#1f6f64; --other:#16323a; --amber:#f2b84a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(1000px 600px at 15% -10%,#153a42,var(--bg) 60%);color:var(--txt);min-height:100dvh}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--line);background:rgba(9,22,26,.6);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
+  .logo .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 12px var(--teal)}
+  header small{color:var(--muted);font-weight:500}
+  .spacer{flex:1}
+  select{font:inherit;background:var(--chipbg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+  .wrap{display:grid;grid-template-columns:290px 1fr;gap:0;max-width:1080px;margin:0 auto;height:calc(100dvh - 63px)}
+  @media(max-width:760px){.wrap{grid-template-columns:1fr} .side{display:none} .side.show{display:block;position:fixed;inset:63px 0 0;z-index:8;background:var(--bg)}}
+  .side{border-right:1px solid var(--line);overflow:auto;padding:12px}
+  .side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:14px 6px 6px}
+  .ch{display:flex;gap:10px;align-items:center;padding:10px 11px;border-radius:11px;cursor:pointer}
+  .ch:hover{background:var(--panel2)} .ch.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--teal)}
+  .ch .ico{width:30px;height:30px;border-radius:9px;background:var(--chipbg);display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+  .ch .n{font-weight:600;font-size:14px} .ch .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ch .meta{flex:1;min-width:0}
+  .ch .badge{background:var(--teal);color:#04231f;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px}
+  .main{display:flex;flex-direction:column;min-width:0}
+  .mhead{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .mhead b{font-size:15px} .mhead .sub{color:var(--muted);font-size:12.5px}
+  .msgs{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:78%;padding:9px 12px;border-radius:14px;background:var(--other);border:1px solid var(--line)}
+  .msg.mine{align-self:flex-end;background:var(--mine);border-color:transparent}
+  .msg .a{font-size:11.5px;color:var(--teal);font-weight:700;margin-bottom:2px}
+  .msg.mine .a{color:#bff3ea}
+  .msg .b{font-size:14px;white-space:pre-wrap;word-wrap:break-word}
+  .msg .t{font-size:10.5px;color:var(--muted);margin-top:3px;text-align:right}
+  .msg.sys{align-self:center;background:transparent;border:0;color:var(--muted);font-size:12px;max-width:90%;text-align:center}
+  .compose{display:flex;gap:9px;padding:12px 14px;border-top:1px solid var(--line)}
+  .compose input{flex:1;background:var(--chipbg);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:12px 14px;font:inherit}
+  .compose button{border:0;border-radius:12px;padding:0 18px;font-weight:700;background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f;cursor:pointer}
+  .note{padding:8px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:rgba(242,184,74,.06)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"></span>Clínica&nbsp;Isis <small>· Comunicación interna</small></div>
+  <div class="spacer"></div>
+  <div class="who">Estás como
+    <select id="who">
+      <option>Recepción · turno mañana</option>
+      <option>Recepción · turno tarde</option>
+      <option>Enfermería</option>
+      <option>Líder de sede</option>
+      <option>Gerencia</option>
+    </select>
+  </div>
+</header>
+<div class="wrap">
+  <aside class="side" id="side"></aside>
+  <section class="main">
+    <div class="mhead" id="mhead"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="note">Todo mensaje queda <b>registrado con autor, hora y contra el caso del paciente</b> — a diferencia de un chat de WhatsApp suelto, aquí la conversación no se pierde entre turnos y cualquiera que entra al caso ve el hilo completo. Los permisos por rol se aplican en producción.</div>
+    <div class="compose"><input id="inp" placeholder="Escribe un mensaje…" autocomplete="off"/><button id="send">Enviar</button></div>
+  </section>
+</div>
+<script>
+(function(){
+  "use strict";
+  const KEY="isis_chat_demo_v1";
+  // channels + per-patient case threads
+  const CHANNELS = [
+    {id:"recepcion", ico:"📞", n:"Recepción", d:"Coordinación entre turnos", kind:"canal"},
+    {id:"quirurgica", ico:"🩺", n:"Programación quirúrgica", d:"Preparación de cirugías", kind:"canal"},
+    {id:"lideres", ico:"⭐", n:"Líderes", d:"Solo líderes y gerencia", kind:"canal", restricted:true},
+    {id:"caso-am", ico:"🧑", n:"Caso · Paciente A. M.", d:"Mamoplastia · hoy 07:30", kind:"caso"},
+    {id:"caso-lg", ico:"🧑", n:"Caso · Paciente L. G.", d:"Rinoplastia · hoy 09:00", kind:"caso"},
+  ];
+  const SEED = {
+    recepcion:[
+      {a:"Recepción · turno mañana", b:"Dejo agendada la valoración de las 3pm, confirmó por WhatsApp.", t:"08:12", d:"hoy"},
+      {a:"Recepción · turno tarde", b:"Recibido, gracias. Yo le doy seguimiento al llegar.", t:"13:40", d:"hoy"},
+    ],
+    quirurgica:[
+      {a:"Enfermería", b:"Faltan los exámenes prequirúrgicos de la paciente de las 9. ¿Alguien los pidió?", t:"07:05", d:"hoy"},
+      {a:"Recepción · turno mañana", b:"Se los solicité ayer, deben llegar antes de las 8. Los subo al checklist en cuanto lleguen.", t:"07:09", d:"hoy"},
+    ],
+    lideres:[{a:"Gerencia", b:"Recordatorio: mantener la experiencia Isis en cada contacto. Excelente semana.", t:"09:00", d:"lun"}],
+    "caso-am":[
+      {a:"Recepción · turno mañana", b:"Prótesis confirmadas con el proveedor, llegan hoy 6am.", t:"06:30", d:"hoy"},
+      {a:"Enfermería", b:"Consentimiento firmado y escaneado. Todo listo de mi lado.", t:"06:55", d:"hoy"},
+    ],
+    "caso-lg":[
+      {a:"Recepción · turno mañana", b:"Pendiente valoración preanestésica — la agendo para primera hora.", t:"07:15", d:"hoy"},
+    ],
+  };
+  let state; try{ state=JSON.parse(localStorage.getItem(KEY))||null; }catch(e){ state=null; }
+  if(!state) state = JSON.parse(JSON.stringify(SEED));
+  let sel = "recepcion";
+  const who=()=>document.getElementById("who").value;
+  const save=()=>{ try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} };
+  const nowT=()=>new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+
+  function renderSide(){
+    const el=document.getElementById("side"); el.innerHTML="";
+    let last=null;
+    CHANNELS.forEach(c=>{
+      if(c.kind!==last){ const g=document.createElement("div"); g.className="grp"; g.textContent=c.kind==="canal"?"Canales":"Casos de paciente"; el.appendChild(g); last=c.kind; }
+      const d=document.createElement("div"); d.className="ch"+(c.id===sel?" sel":"");
+      d.onclick=()=>{sel=c.id;render();};
+      const msgs=state[c.id]||[]; const lastMsg=msgs[msgs.length-1];
+      d.innerHTML=`<div class="ico">${c.ico}</div><div class="meta"><div class="n">${c.n}${c.restricted?' 🔒':''}</div><div class="d">${lastMsg?lastMsg.b:c.d}</div></div>`;
+      el.appendChild(d);
+    });
+  }
+  function renderMain(){
+    const c=CHANNELS.find(x=>x.id===sel);
+    document.getElementById("mhead").innerHTML=`<div class="ico" style="width:30px;height:30px;border-radius:9px;background:var(--chipbg);display:grid;place-items:center">${c.ico}</div><div><b>${c.n}</b><div class="sub">${c.d}</div></div>`;
+    const box=document.getElementById("msgs"); box.innerHTML="";
+    const restricted = c.restricted && !/Líder|Gerencia/.test(who());
+    if(restricted){ box.innerHTML='<div class="msg sys">🔒 Este canal es solo para líderes y gerencia. Cambia de rol arriba para verlo (los permisos se aplican en producción).</div>'; return; }
+    (state[sel]||[]).forEach(m=>{
+      const mine = m.a===who();
+      const el=document.createElement("div"); el.className="msg"+(mine?" mine":"");
+      el.innerHTML=`<div class="a">${m.a}</div><div class="b"></div><div class="t">${m.d?m.d+" · ":""}${m.t}</div>`;
+      el.querySelector(".b").textContent=m.b;
+      box.appendChild(el);
+    });
+    box.scrollTop=box.scrollHeight;
+  }
+  function render(){ renderSide(); renderMain(); }
+  function send(){
+    const inp=document.getElementById("inp"); const v=inp.value.trim(); if(!v) return;
+    const c=CHANNELS.find(x=>x.id===sel);
+    if(c.restricted && !/Líder|Gerencia/.test(who())) return;
+    (state[sel]=state[sel]||[]).push({a:who(),b:v,t:nowT(),d:"ahora"});
+    save(); inp.value=""; render();
+  }
+  document.getElementById("send").onclick=send;
+  document.getElementById("inp").addEventListener("keydown",e=>{ if(e.key==="Enter") send(); });
+  document.getElementById("who").onchange=render;
+  render();
+})();
+</script>
+</body>
+</html>

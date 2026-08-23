@@ -1116,14 +1116,14 @@ ISIS_DEMO_AGENT_ID = (
 _CORS_ANY = {"Access-Control-Allow-Origin": "*"}
 
 
-def _mascota_html_path() -> Path | None:
-    """Locate the demo HTML across local dev and the Modal image layout."""
+def _demo_html_path(filename: str) -> Path | None:
+    """Locate a demo HTML file across local dev and the Modal image layout."""
     from app.services.ghl_service import _REPO_ROOT  # proven to resolve to /root in the image
 
     candidates = [
-        _REPO_ROOT / "demo" / "mascota-bianca.html",
-        Path(__file__).resolve().parents[1] / "demo" / "mascota-bianca.html",
-        Path("/root/demo/mascota-bianca.html"),
+        _REPO_ROOT / "demo" / filename,
+        Path(__file__).resolve().parents[1] / "demo" / filename,
+        Path("/root/demo") / filename,
     ]
     for c in candidates:
         if c.exists():
@@ -1131,22 +1131,29 @@ def _mascota_html_path() -> Path | None:
     return None
 
 
-@web_app.get("/mascota")
-async def mascota_page(request: Request) -> HTMLResponse:
-    """Serves the Clínica Isis talking-mascot demo (Bianca)."""
-    path = _mascota_html_path()
+def _serve_demo(filename: str) -> HTMLResponse:
+    path = _demo_html_path(filename)
     if not path:
-        if request.query_params.get("debug"):
-            from app.services.ghl_service import _REPO_ROOT
-            info = {
-                "repo_root": str(_REPO_ROOT),
-                "root_listing": sorted(os.listdir("/root")) if os.path.isdir("/root") else "no /root",
-                "repo_root_listing": sorted(os.listdir(_REPO_ROOT)) if _REPO_ROOT.is_dir() else "n/a",
-                "file_dunder": str(Path(__file__).resolve()),
-            }
-            return JSONResponse(status_code=404, content=info)
         return HTMLResponse("<h1>Demo no disponible</h1>", status_code=404)
     return HTMLResponse(path.read_text(encoding="utf-8"))
+
+
+@web_app.get("/mascota")
+async def mascota_page() -> HTMLResponse:
+    """Clínica Isis talking-mascot demo (Bianca)."""
+    return _serve_demo("mascota-bianca.html")
+
+
+@web_app.get("/checklist")
+async def checklist_page() -> HTMLResponse:
+    """Clínica Isis surgical-traceability checklist demo."""
+    return _serve_demo("checklist-isis.html")
+
+
+@web_app.get("/chat-interno")
+async def chat_interno_page() -> HTMLResponse:
+    """Clínica Isis internal per-case communication demo."""
+    return _serve_demo("chat-interno-isis.html")
 
 
 @web_app.options("/isis-web-call")
@@ -1250,8 +1257,8 @@ if modal is not None:
         # and the failure hides, because the webhook answers 200 by design, so
         # Retell never retries and the raised error only lands in a log.
         .add_local_dir("prompts", "/root/prompts")
-        # The Clínica Isis mascot demo page, served at GET /mascota.
-        .add_local_file("demo/mascota-bianca.html", "/root/demo/mascota-bianca.html")
+        # Clínica Isis MVP demo pages, served at GET /mascota, /checklist, …
+        .add_local_dir("demo", "/root/demo")
         .add_local_python_source("app")
     )
 
