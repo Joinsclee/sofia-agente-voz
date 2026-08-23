@@ -66,6 +66,16 @@
   .row:last-child{border-bottom:0}
   .row:hover{background:var(--panel2)}
   .row.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--teal)}
+  .row.risk{background:rgba(255,122,107,.07)}
+  .row.risk:hover{background:rgba(255,122,107,.11)}
+  .row.risk .sem.red,.row.risk .sem.amber{animation:sempulse 1.3s ease-in-out infinite}
+  @keyframes sempulse{0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(255,122,107,.5)}50%{box-shadow:0 0 0 5px rgba(255,122,107,.16),0 0 13px rgba(255,122,107,.85)}}
+  .tchip{font-size:12px;font-weight:700;color:var(--muted);background:var(--chipbg);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap;flex:0 0 auto}
+  .tchip.hot{color:#ffb3aa;background:rgba(255,122,107,.14);border-color:rgba(255,122,107,.38)}
+  .kpi.risk{border-color:rgba(255,122,107,.45)} .kpi.risk .v{color:var(--red)}
+  .banner.red.urg{animation:urgp 1.7s ease-in-out infinite}
+  @keyframes urgp{0%,100%{opacity:1}50%{opacity:.72}}
+  .rbadge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;color:var(--muted-2);background:var(--chipbg);border:1px solid var(--line-2);border-radius:999px;padding:1px 7px;margin-left:2px;vertical-align:1px}
   .sem{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
   .sem.red{background:var(--red);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(255,122,107,.5)} .sem.amber{background:var(--amber);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(244,196,82,.45)} .sem.green{background:var(--green);box-shadow:0 0 0 3px rgba(255,255,255,.04),0 0 7px rgba(58,211,155,.5)}
   .row .meta{flex:1;min-width:0}
@@ -86,6 +96,7 @@
   .item .lbl .t .req{color:var(--red);font-weight:800;margin-left:3px}
   .item .lbl .by{font-size:12px;color:var(--muted-2);margin-top:2px}
   .banner{border-radius:12px;padding:11px 13px;margin:14px 0;font-weight:600;font-size:14px;display:flex;gap:9px;align-items:center}
+  .banner svg{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   .banner.red{background:rgba(255,122,107,.13);color:#ffb3aa;border:1px solid rgba(255,122,107,.3)}
   .banner.amber{background:rgba(244,196,82,.12);color:#f5cf88;border:1px solid rgba(244,196,82,.3)}
   .banner.green{background:rgba(58,211,155,.12);color:#8ff0cc;border:1px solid rgba(58,211,155,.3)}
@@ -192,14 +203,23 @@
   const pkey=(id,d)=>((d==null?day:d)+":"+id);
   function rec(id,d){ const k=pkey(id,d); return state[k]||(state[k]={items:{},log:[],handoff:null}); }
   const items=p=>ITEMS.filter(it=>!it.onlyIf||p[it.onlyIf]);
+  const isOn=(r,k)=> !!(r.items[k] && !r.items[k].revoked);   // revoked items stay in history but don't count as done
   function now(){ const d=new Date(); return d.toLocaleString("es-CO",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"}); }
+  const roleOf = by => String(by).split("·")[0].trim();
   function status(p,d){ const r=rec(p.id,d); const list=items(p); const reqs=list.filter(i=>i.req);
-    const doneReq=reqs.filter(i=>r.items[i.k]).length, doneAny=list.filter(i=>r.items[i.k]).length;
+    const doneReq=reqs.filter(i=>isOn(r,i.k)).length, doneAny=list.filter(i=>isOn(r,i.k)).length;
     if(doneReq===reqs.length) return {s:"green",txt:"Lista",done:doneAny,total:list.length};
     if(doneAny===0) return {s:"red",txt:"Sin preparar",done:0,total:list.length};
     return {s:"amber",txt:"En preparación",done:doneAny,total:list.length};
   }
   function dayStats(d){ let g=0,a=0,r=0; SEED.forEach(p=>{const s=status(p,d).s; if(s==="green")g++;else if(s==="amber")a++;else r++;}); return {g,a,r,total:SEED.length}; }
+  // ---- day-of urgency: time-to-surgery drives the "prep didn't get done in time" story ----
+  const DEMO_NOW = 6*60+50;          // 06:50 — anchors the board to a live surgical morning
+  const RISK_WINDOW = 90;            // minutes before the slot that an unready case turns "at risk"
+  const toMin = h => { const p=String(h).split(":"); return (+p[0])*60+(+(p[1]||0)); };
+  function minsToSurgery(p,d){ if((d==null?day:d)!==0) return null; return toMin(p.hora)-DEMO_NOW; }
+  function atRisk(p,d){ const m=minsToSurgery(p,d); if(m==null) return false; return m<=RISK_WINDOW && status(p,d).s!=="green"; }
+  function riskList(d){ return SEED.filter(p=>atRisk(p,d)).sort((a,b)=>minsToSurgery(a,d)-minsToSurgery(b,d)); }
 
   // ---------- shell ----------
   function renderShell(){
@@ -219,28 +239,35 @@
   }
   function kpis(){
     const st=dayStats(day); const reqTotal=SEED.reduce((a,p)=>a+items(p).filter(i=>i.req).length,0);
-    const reqDone=SEED.reduce((a,p)=>{const r=rec(p.id);return a+items(p).filter(i=>i.req&&r.items[i.k]).length;},0);
+    const reqDone=SEED.reduce((a,p)=>{const r=rec(p.id);return a+items(p).filter(i=>i.req&&isOn(r,i.k)).length;},0);
     const pct=reqTotal?Math.round(reqDone/reqTotal*100):0;
+    const rc=riskList(day).length;
     return `<div class="kpis">
       <div class="kpi"><div class="k">${IC.clock} Cirugías del día</div><div class="v">${st.total}</div></div>
       <div class="kpi accent"><div class="k">${IC.check} Listas para cirugía</div><div class="v">${st.g}<small> / ${st.total}</small></div></div>
-      <div class="kpi"><div class="k">${IC.alert} Con pendientes</div><div class="v">${st.a+st.r}</div></div>
+      <div class="kpi${rc?' risk':''}"><div class="k">${IC.alert} Inicios en riesgo</div><div class="v">${rc}</div></div>
       <div class="kpi"><div class="k">${IC.shield} Trazabilidad</div><div class="v">${pct}<small>%</small></div></div>
     </div>`;
   }
 
   // ---------- view: programación ----------
   function viewProg(){
-    S.innerHTML = kpis() + `<div class="daybar" id="daybar"></div>
+    const rk=riskList(day);
+    let alert="";
+    if(rk.length){ const p0=rk[0], m0=minsToSurgery(p0); const more=rk.length>1?` · +${rk.length-1} más`:"";
+      alert=`<div class="banner red urg" style="margin:0 0 14px">${IC.alert} ${esc(p0.code)} entra ${m0>=0?'en '+m0+' min':'ya'} y le faltan requisitos críticos${more}</div>`; }
+    S.innerHTML = kpis() + alert + `<div class="daybar" id="daybar"></div>
       <div class="cols"><div><h2>Cirugías del día</h2><div class="card" id="list"></div></div>
       <div><h2>Checklist del paciente</h2><div class="detail" id="detail"></div></div></div>`;
     const bar=document.getElementById("daybar");
     DAYS.forEach((d,i)=>{const b=document.createElement("button");b.textContent=d;if(i===day)b.className="active";
       b.onclick=()=>{day=i;selId=null;render();};bar.appendChild(b);});
     const el=document.getElementById("list");
-    SEED.forEach(p=>{const st=status(p);const row=document.createElement("div");row.className="row"+(p.id===selId?" sel":"");
+    SEED.forEach(p=>{const st=status(p);const risk=atRisk(p);const m=minsToSurgery(p);
+      const tchip = m==null?"":(m>=0?`en ${m} min`:`hace ${-m} min`);
+      const row=document.createElement("div");row.className="row"+(p.id===selId?" sel":"")+(risk?" risk":"");
       row.onclick=()=>{selId=p.id;render();};
-      row.innerHTML=`<span class="sem ${st.s}"></span><div class="meta"><div class="name">${p.code}</div><div class="sub">${p.hora} · ${p.proc} · ${p.cir}</div></div><span class="count">${st.done}/${st.total}</span>`;
+      row.innerHTML=`<span class="sem ${st.s}"></span><div class="meta"><div class="name">${p.code}</div><div class="sub">${p.hora} · ${p.proc} · ${p.cir}</div></div>${tchip?`<span class="tchip${risk?' hot':''}">${tchip}</span>`:""}<span class="count">${st.done}/${st.total}</span>`;
       el.appendChild(row);});
     renderDetail();
   }
@@ -249,8 +276,9 @@
     const p=SEED.find(x=>x.id===selId);
     if(!p){ el.innerHTML='<div class="empty">Selecciona una cirugía para ver y completar su checklist.</div>'; return; }
     const r=rec(p.id); const list=items(p); const st=status(p);
-    let h=`<div class="head"><span class="sem ${st.s}"></span><b>${p.code}</b></div><div class="proc">${p.hora} · ${p.proc} · ${p.cir}</div>`;
-    list.forEach(it=>{const on=!!r.items[it.k];
+    const m=minsToSurgery(p); const urg = m==null?"":` · <b style="color:${atRisk(p)?'#ffb3aa':'var(--muted)'}">${m>=0?'entra en '+m+' min':'hace '+(-m)+' min'}</b>`;
+    let h=`<div class="head"><span class="sem ${st.s}"></span><b>${p.code}</b></div><div class="proc">${p.hora} · ${p.proc} · ${p.cir}${urg}</div>`;
+    list.forEach(it=>{const on=isOn(r,it.k);
       const by=on&&r.items[it.k].by?`<div class="by">✓ ${esc(r.items[it.k].by)} · ${r.items[it.k].at}</div>`:"";
       h+=`<div class="item"><div class="cbx ${on?'on':''}" data-k="${it.k}">${CHECK}</div><div class="lbl"><div class="t">${it.t}${it.req?'<span class="req">*</span>':''}</div>${by}</div></div>`;});
     const b= st.s==="green"?{c:"green",t:"✓ Lista para cirugía · todos los requisitos completos"}:st.s==="red"?{c:"red",t:"● Faltan requisitos críticos · no entregar como lista"}:{c:"amber",t:"● En preparación · faltan requisitos por confirmar"};
@@ -268,8 +296,8 @@
     const ns=el.querySelector("#noteSave"); if(ns) ns.onclick=()=>saveNote(p);
   }
   function toggle(p,k){const r=rec(p.id);const it=ITEMS.find(i=>i.k===k);
-    if(r.items[k]){delete r.items[k];r.log.push({at:now(),by:who(),what:`desmarcó "${it.t}"`});}
-    else{r.items[k]={by:who(),at:now()};r.log.push({at:now(),by:who(),what:`marcó "${it.t}"`});}
+    if(isOn(r,k)){ r.items[k].revoked=true; r.log.push({at:now(),by:who(),what:`desmarcó "${it.t}"`}); }
+    else{ const again=!!r.items[k]; r.items[k]={by:who(),at:now(),revoked:false}; r.log.push({at:now(),by:who(),what:`${again?'volvió a marcar':'marcó'} "${it.t}"`}); }
     save(state);render();}
   function handoff(p){const r=rec(p.id);r.handoff={by:who(),at:now()};r.log.push({at:now(),by:who(),what:"ENTREGÓ el turno con la cirugía marcada como LISTA"});save(state);render();}
   function saveNote(p){const t=document.getElementById("noteInput");const txt=t?t.value.trim():"";if(!txt){noteOpen=false;renderDetail();return;}
@@ -277,7 +305,7 @@
 
   // ---------- view: pacientes ----------
   function viewPac(){
-    let rows=SEED.map(p=>{const st=status(p);const req=items(p).filter(i=>i.req);const rd=req.filter(i=>rec(p.id).items[i.k]).length;
+    let rows=SEED.map(p=>{const st=status(p);const req=items(p).filter(i=>i.req);const rd=req.filter(i=>isOn(rec(p.id),i.k)).length;
       return `<tr><td><b>${p.code}</b></td><td>${p.proc}</td><td>${p.hora}</td><td>${p.cir}</td><td>${rd}/${req.length}</td><td><span class="tag ${st.s}"><span class="sem ${st.s}" style="width:8px;height:8px;box-shadow:none"></span>${st.txt}</span></td></tr>`;}).join("");
     S.innerHTML = kpis() + `<div class="card"><table><thead><tr><th>Paciente</th><th>Procedimiento</th><th>Hora</th><th>Cirujano</th><th>Requisitos</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="note-foot">Cada paciente lleva su checklist con requisitos críticos y firma de turno. El estado de arriba se calcula solo: nadie lo marca "listo" a mano si falta un requisito.</p>`;
@@ -306,7 +334,7 @@
     return out;
   }
   function viewAct(){
-    const rows=allLog().slice().reverse().map(e=>`<tr><td style="white-space:nowrap;color:var(--muted-2)">${e.at}</td><td><span class="whoi" style="color:var(--teal);font-weight:600">${esc(e.by)}</span></td><td>${esc(e.pac)} <span class="pill">${e.day}</span></td><td>${esc(e.what)}</td></tr>`).join("");
+    const rows=allLog().slice().reverse().map(e=>`<tr><td style="white-space:nowrap;color:var(--muted-2)">${e.at}</td><td><span class="whoi" style="color:var(--teal);font-weight:600">${esc(e.by)}</span> <span class="rbadge">${esc(roleOf(e.by))}</span></td><td>${esc(e.pac)} <span class="pill">${e.day}</span></td><td>${esc(e.what)}</td></tr>`).join("");
     S.innerHTML = kpis() + `<div class="card"><table><thead><tr><th>Cuándo</th><th>Quién</th><th>Paciente</th><th>Acción</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="empty">Sin actividad todavía. Marca requisitos en Programación para ver el registro.</td></tr>'}</tbody></table></div>
       <p class="note-foot">Registro <b>inmutable</b>: cada acción queda con autor y hora. Es la evidencia de trazabilidad que pide una auditoría ISO 9001, y lo que evita el "yo pensé que la del turno anterior ya lo había hecho".</p>`;
   }
@@ -315,7 +343,7 @@
     if(view==="prog") viewProg(); else if(view==="pac") viewPac(); else if(view==="ind") viewInd(); else viewAct(); }
 
   document.getElementById("who").onchange=render;
-  document.getElementById("reset").onclick=()=>{ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };
+  document.getElementById("reset").onclick=()=>{ if(!confirm("Reiniciar borra el avance guardado en este navegador. Esto es solo para la demo; en producción el historial es permanente. ¿Continuar?")) return; try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };
   render();
 })();
 </script>

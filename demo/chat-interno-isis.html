@@ -54,6 +54,13 @@
   .compose input{flex:1;background:var(--chipbg);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:12px 14px;font:inherit}
   .compose button{border:0;border-radius:12px;padding:0 18px;font-weight:700;background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f;cursor:pointer}
   .note{padding:8px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:rgba(242,184,74,.06)}
+  .casechip-wrap{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+  .rchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .rchip.ok{background:rgba(58,211,155,.13);color:#8ff0cc} .rchip.warn{background:rgba(244,196,82,.13);color:#f5cf88}
+  .sem2{width:8px;height:8px;border-radius:50%;flex:0 0 auto} .sem2.ok{background:#3ad39b} .sem2.warn{background:#f4c452}
+  .caselink{font-size:12px;color:var(--teal);text-decoration:none;font-weight:600;white-space:nowrap}
+  .caselink:hover{text-decoration:underline}
+  .daysep{align-self:center;font-size:11px;color:var(--muted-2);background:var(--chipbg);border:1px solid var(--line-2);border-radius:999px;padding:2px 12px;margin:2px 0}
   .resetBtn{background:var(--chipbg);color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer}
   .menuBtn{display:none;background:var(--chipbg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px}
   @media(max-width:760px){ .menuBtn{display:inline-block} }
@@ -100,8 +107,10 @@
     {id:"recepcion", ico:IC.phone, n:"Recepción", d:"Coordinación entre turnos", kind:"canal"},
     {id:"quirurgica", ico:IC.steth, n:"Programación quirúrgica", d:"Preparación de cirugías", kind:"canal"},
     {id:"lideres", ico:IC.shield, n:"Líderes", d:"Solo líderes y gerencia", kind:"canal", restricted:true},
-    {id:"caso-am", ico:IC.person, n:"Caso · Paciente A. M.", d:"Mamoplastia · hoy 07:30", kind:"caso"},
-    {id:"caso-lg", ico:IC.person, n:"Caso · Paciente L. G.", d:"Rinoplastia · hoy 09:00", kind:"caso"},
+    {id:"caso-am", ico:IC.person, n:"Caso · Paciente A. M.", d:"Mamoplastia · hoy 07:30", kind:"caso",
+      cas:{proc:"Mamoplastia de aumento", hora:"hoy 07:30", ready:5, total:5, falta:null}},
+    {id:"caso-lg", ico:IC.person, n:"Caso · Paciente L. G.", d:"Rinoplastia · hoy 09:00", kind:"caso",
+      cas:{proc:"Rinoplastia", hora:"hoy 09:00", ready:3, total:5, falta:"valoración preanestésica"}},
   ];
   const SEED = {
     recepcion:[
@@ -123,10 +132,18 @@
   };
   let state; try{ state=JSON.parse(localStorage.getItem(KEY))||null; }catch(e){ state=null; }
   if(!state) state = JSON.parse(JSON.stringify(SEED));
+  if(!state._seen){ state._seen={}; CHANNELS.forEach(c=>{ state._seen[c.id]=(state[c.id]||[]).length; });
+    // seed a couple of unread threads so the shift-handoff state is visible on load
+    state._seen["quirurgica"]=Math.max(0,(state["quirurgica"]||[]).length-1);
+    state._seen["caso-lg"]=Math.max(0,(state["caso-lg"]||[]).length-1); }
   let sel = "recepcion";
   const who=()=>document.getElementById("who").value;
   const save=()=>{ try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} };
   const nowT=()=>new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+  const unread=id=>Math.max(0,(state[id]||[]).length-((state._seen&&state._seen[id])||0));
+  const markSeen=id=>{ if(!state._seen)state._seen={}; state._seen[id]=(state[id]||[]).length; };
+  const DAYLBL={hoy:"Hoy",ahora:"Hoy",lun:"Lunes",mar:"Martes",mie:"Miércoles",jue:"Jueves",vie:"Viernes"};
+  const dayLabel=d=>DAYLBL[d]||(d?d.charAt(0).toUpperCase()+d.slice(1):"");
 
   function renderSide(){
     const el=document.getElementById("side"); el.innerHTML="";
@@ -137,28 +154,34 @@
       d.onclick=()=>{sel=c.id; document.getElementById("side").classList.remove("show"); render();};
       const msgs=state[c.id]||[]; const lastMsg=msgs[msgs.length-1];
       const canPreview = !c.restricted || /Líder|Gerencia/.test(who());
-      d.innerHTML=`<div class="ico">${c.ico}</div><div class="meta"><div class="n">${c.n}${c.restricted?'<span class="lockic">'+IC.lock+'</span>':''}</div><div class="d"></div></div>`;
+      const u = canPreview ? unread(c.id) : 0;
+      d.innerHTML=`<div class="ico">${c.ico}</div><div class="meta"><div class="n">${c.n}${c.restricted?'<span class="lockic">'+IC.lock+'</span>':''}</div><div class="d"></div></div>${u?'<span class="badge">'+u+'</span>':''}`;
       d.querySelector(".d").textContent = (canPreview && lastMsg) ? lastMsg.b : c.d;
       el.appendChild(d);
     });
   }
   function renderMain(){
     const c=CHANNELS.find(x=>x.id===sel);
-    document.getElementById("mhead").innerHTML=`<div class="ico" style="width:30px;height:30px;border-radius:9px;background:var(--chipbg);display:grid;place-items:center">${c.ico}</div><div><b>${c.n}</b><div class="sub">${c.d}</div></div>`;
+    const chip = c.cas?`<div class="casechip-wrap"><span class="rchip ${c.cas.falta?'warn':'ok'}"><span class="sem2 ${c.cas.falta?'warn':'ok'}"></span>Preparación ${c.cas.ready}/${c.cas.total}${c.cas.falta?' · falta '+c.cas.falta:' · lista'}</span><a class="caselink" href="./checklist" target="_blank" rel="noopener">Ver preparación →</a></div>`:"";
+    document.getElementById("mhead").innerHTML=`<div class="ico" style="width:30px;height:30px;border-radius:9px;background:var(--chipbg);display:grid;place-items:center;flex:0 0 auto">${c.ico}</div><div style="min-width:0"><b>${c.n}</b><div class="sub">${c.d}</div></div>${chip}`;
     const box=document.getElementById("msgs"); box.innerHTML="";
     const restricted = c.restricted && !/Líder|Gerencia/.test(who());
     document.querySelector(".compose").style.display = restricted ? "none" : "flex";
     if(restricted){ box.innerHTML='<div class="msg sys"><span class="lockic">'+IC.lock+'</span> Este canal es solo para líderes y gerencia. Cambia de rol arriba para verlo (los permisos se aplican en producción).</div>'; return; }
+    let lastLbl=null;
     (state[sel]||[]).forEach(m=>{
+      const lbl=dayLabel(m.d);
+      if(lbl && lbl!==lastLbl){ const s=document.createElement("div"); s.className="daysep"; s.textContent=lbl; box.appendChild(s); lastLbl=lbl; }
       const mine = m.a===who();
       const el=document.createElement("div"); el.className="msg"+(mine?" mine":"");
-      el.innerHTML=`<div class="a">${m.a}</div><div class="b"></div><div class="t">${m.d?m.d+" · ":""}${m.t}</div>`;
+      el.innerHTML=`<div class="a"></div><div class="b"></div><div class="t">${m.t}</div>`;
+      el.querySelector(".a").textContent=m.a;
       el.querySelector(".b").textContent=m.b;
       box.appendChild(el);
     });
     box.scrollTop=box.scrollHeight;
   }
-  function render(){ renderSide(); renderMain(); }
+  function render(){ markSeen(sel); renderSide(); renderMain(); save(); }
   function send(){
     const inp=document.getElementById("inp"); const v=inp.value.trim(); if(!v) return;
     const c=CHANNELS.find(x=>x.id===sel);
