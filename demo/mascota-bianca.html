@@ -184,9 +184,9 @@
 (function(){
   "use strict";
   // ---- Config: el backend mintea el token de llamada web de Retell ----
-  const TOKEN_ENDPOINT = (new URLSearchParams(location.search).get("backend")
-     || "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run") + "/isis-web-call";
-  const RETELL_SDK = "https://unpkg.com/retell-client-js-sdk@latest/dist/index.js";
+  const BACKEND = ((new URLSearchParams(location.search).get("backend")
+     || "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run")).replace(/\/+$/,"");
+  const TOKEN_ENDPOINT = BACKEND + "/isis-web-call";
 
   const body = document.body;
   const mouth = document.getElementById("mouth");
@@ -249,12 +249,14 @@
   if(typeof speechSynthesis!=="undefined") speechSynthesis.onvoiceschanged=()=>{};
 
   // ---------- MODO 2: Hablar con Bianca (Retell web call, voz real + lip-sync por amplitud) ----------
-  let retell=null, audioCtx=null, ampRaf=null;
+  let retell=null, gotAudio=false;
   async function loadRetell(){
-    if(window.RetellWebClient) return window.RetellWebClient;
-    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=RETELL_SDK; s.onload=res; s.onerror=()=>rej(new Error("sdk")); document.head.appendChild(s); });
-    // el bundle expone RetellWebClient global o como módulo
-    return window.RetellWebClient || (window.RetellClientJsSdk && window.RetellClientJsSdk.RetellWebClient);
+    if(window.__RWC) return window.__RWC;
+    // El build CJS/UMD no funciona con <script> plano; se importa como ESM
+    // (esm.sh resuelve livekit-client + eventemitter3). import() dinámico funciona
+    // dentro de este IIFE sin convertir la página a type="module".
+    const mod = await import("https://esm.sh/retell-client-js-sdk@2");
+    return (window.__RWC = mod.RetellWebClient);
   }
   async function talk(){
     stopAll();
@@ -271,29 +273,33 @@
     catch(e){ setStatus("Sin conexión al SDK"); hint.textContent="No se pudo cargar el SDK de voz (revisa internet). Usa Vista previa."; talkBtn.disabled=false; return; }
     try{
       retell = new RWC();
-      retell.on("call_started", ()=>{ setStatus("En llamada — háblale", true); stopBtn.disabled=false; });
+      gotAudio=false;
+      retell.on("call_started", ()=>{ setStatus("En llamada — háblale", true); stopBtn.disabled=false; try{ retell.startAudioPlayback && retell.startAudioPlayback(); }catch(e){} });
       retell.on("call_ended", ()=>{ endCall(); });
-      retell.on("agent_start_talking", ()=>{ setTalking(true); if(!ampRaf) flapFallback(); });
+      // startCall atrapa sus propios errores (mic denegado, fallo de conexión) y
+      // emite "error" en vez de lanzar — sin este listener el botón "no hace nada".
+      retell.on("error", ()=>{ setStatus("No se pudo iniciar (revisa el micrófono)"); endCall(); });
+      retell.on("agent_start_talking", ()=>{ setTalking(true); if(!gotAudio) flapFallback(); });
       retell.on("agent_stop_talking", ()=>{ setTalking(false); target=0; });
       retell.on("update", (u)=>{ if(u && u.transcript){ const last=[...u.transcript].reverse().find(t=>t.role==="agent"); if(last) caption.textContent=last.content; } });
-      // amplitud real si el SDK entrega frames de audio
-      retell.on("audio", (pcm)=>{ if(!pcm||!pcm.length) return; let s=0; for(let i=0;i<pcm.length;i++) s+=pcm[i]*pcm[i]; const rms=Math.sqrt(s/pcm.length); target = Math.min(1, rms*7); });
-      await retell.startCall({ accessToken: token });
+      // lip-sync por amplitud real — requiere emitRawAudioSamples:true
+      retell.on("audio", (pcm)=>{ if(!pcm||!pcm.length) return; gotAudio=true; let s=0; for(let i=0;i<pcm.length;i++) s+=pcm[i]*pcm[i]; const rms=Math.sqrt(s/pcm.length); target = Math.min(1, rms*7); });
+      await retell.startCall({ accessToken: token, emitRawAudioSamples: true });
     }catch(e){ setStatus("No se pudo iniciar la llamada"); talkBtn.disabled=false; }
   }
   // fallback: si no llegan frames de audio, animar boca mientras el agente habla
   function flapFallback(){
-    let live=true;
-    const tick=()=>{ if(!body.classList.contains("talking")){ live=false; target=0; return;} target = 0.3 + Math.random()*0.65; if(live) setTimeout(tick, 90); };
+    // Solo mientras el agente habla y AÚN no llegan frames de audio reales.
+    const tick=()=>{ if(!body.classList.contains("talking") || gotAudio){ return; } target = 0.3 + Math.random()*0.65; setTimeout(tick, 90); };
     tick();
   }
-  function endCall(){ setTalking(false); target=0; setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null;} }
+  function endCall(){ setTalking(false); target=0; gotAudio=false; setStatus("Lista para atenderte"); talkBtn.disabled=false; stopBtn.disabled=true; if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null;} }
 
   function stopAll(){
     if(previewTimer){clearInterval(previewTimer); previewTimer=null;}
     if(typeof speechSynthesis!=="undefined") speechSynthesis.cancel();
     if(retell){ try{retell.stopCall&&retell.stopCall();}catch(e){} retell=null; }
-    setTalking(false); target=0; stopBtn.disabled=true;
+    gotAudio=false; setTalking(false); target=0; stopBtn.disabled=true;
   }
 
   talkBtn.addEventListener("click", talk);
