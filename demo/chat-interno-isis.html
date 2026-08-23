@@ -45,10 +45,14 @@
   .compose input{flex:1;background:var(--chipbg);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:12px 14px;font:inherit}
   .compose button{border:0;border-radius:12px;padding:0 18px;font-weight:700;background:linear-gradient(180deg,var(--teal),var(--teal-d));color:#04231f;cursor:pointer}
   .note{padding:8px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:rgba(242,184,74,.06)}
+  .resetBtn{background:var(--chipbg);color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer}
+  .menuBtn{display:none;background:var(--chipbg);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px}
+  @media(max-width:760px){ .menuBtn{display:inline-block} }
 </style>
 </head>
 <body>
 <header>
+  <button id="menuBtn" class="menuBtn" title="Canales" aria-label="Abrir canales">☰</button>
   <div class="logo"><span class="dot"></span>Clínica&nbsp;Isis <small>· Comunicación interna</small></div>
   <div class="spacer"></div>
   <div class="who">Estás como
@@ -60,6 +64,7 @@
       <option>Gerencia</option>
     </select>
   </div>
+  <button id="reset" class="resetBtn" title="Reiniciar demo">↺</button>
 </header>
 <div class="wrap">
   <aside class="side" id="side"></aside>
@@ -113,9 +118,11 @@
     CHANNELS.forEach(c=>{
       if(c.kind!==last){ const g=document.createElement("div"); g.className="grp"; g.textContent=c.kind==="canal"?"Canales":"Casos de paciente"; el.appendChild(g); last=c.kind; }
       const d=document.createElement("div"); d.className="ch"+(c.id===sel?" sel":"");
-      d.onclick=()=>{sel=c.id;render();};
+      d.onclick=()=>{sel=c.id; document.getElementById("side").classList.remove("show"); render();};
       const msgs=state[c.id]||[]; const lastMsg=msgs[msgs.length-1];
-      d.innerHTML=`<div class="ico">${c.ico}</div><div class="meta"><div class="n">${c.n}${c.restricted?' 🔒':''}</div><div class="d">${lastMsg?lastMsg.b:c.d}</div></div>`;
+      const canPreview = !c.restricted || /Líder|Gerencia/.test(who());
+      d.innerHTML=`<div class="ico">${c.ico}</div><div class="meta"><div class="n">${c.n}${c.restricted?' 🔒':''}</div><div class="d"></div></div>`;
+      d.querySelector(".d").textContent = (canPreview && lastMsg) ? lastMsg.b : c.d;
       el.appendChild(d);
     });
   }
@@ -124,6 +131,7 @@
     document.getElementById("mhead").innerHTML=`<div class="ico" style="width:30px;height:30px;border-radius:9px;background:var(--chipbg);display:grid;place-items:center">${c.ico}</div><div><b>${c.n}</b><div class="sub">${c.d}</div></div>`;
     const box=document.getElementById("msgs"); box.innerHTML="";
     const restricted = c.restricted && !/Líder|Gerencia/.test(who());
+    document.querySelector(".compose").style.display = restricted ? "none" : "flex";
     if(restricted){ box.innerHTML='<div class="msg sys">🔒 Este canal es solo para líderes y gerencia. Cambia de rol arriba para verlo (los permisos se aplican en producción).</div>'; return; }
     (state[sel]||[]).forEach(m=>{
       const mine = m.a===who();
@@ -145,6 +153,8 @@
   document.getElementById("send").onclick=send;
   document.getElementById("inp").addEventListener("keydown",e=>{ if(e.key==="Enter") send(); });
   document.getElementById("who").onchange=render;
+  document.getElementById("menuBtn").onclick=()=>document.getElementById("side").classList.toggle("show");
+  document.getElementById("reset").onclick=()=>{ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };
   render();
 })();
 </script>

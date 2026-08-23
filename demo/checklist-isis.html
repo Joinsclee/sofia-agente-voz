@@ -84,6 +84,7 @@
       <option>Líder de sede</option>
     </select>
   </div>
+  <button id="reset" style="background:var(--chipbg);color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer">↺ Reiniciar</button>
 </header>
 
 <div class="wrap">
@@ -104,6 +105,7 @@
 <script>
 (function(){
   "use strict";
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const CHECK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04231f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
   // --- Demo data: checklist items (critical ones gate "listo") ---
   const ITEMS = [
@@ -125,7 +127,7 @@
 
   function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ return {}; } }
   function save(s){ try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch(e){} }
-  let state = load();
+  let state = load() || {};
   let day = 0, selId = null;
 
   function pkey(id){ return day+":"+id; }
@@ -183,10 +185,10 @@
     html+=`<div class="handoff">
       <button class="btn primary" id="handoffBtn" ${st.s!=="green"?"disabled":""}>Entregar turno como lista ✍</button>
       <button class="btn ghost" id="noteBtn">Registrar nota de turno</button></div>`;
-    if(r.handoff) html+=`<div class="banner green">Turno entregado por <b>${r.handoff.by}</b> · ${r.handoff.at}</div>`;
+    if(r.handoff) html+=`<div class="banner ${st.s==='green'?'green':'amber'}">Turno entregado por <b>${esc(r.handoff.by)}</b> · ${r.handoff.at}${st.s!=='green'?' (cambió después de la entrega)':''}</div>`;
     html+=`<div class="log"><h3>Historial (inmutable)</h3>`;
     if(!r.log.length) html+=`<div class="entry">Sin movimientos aún.</div>`;
-    else [...r.log].reverse().forEach(e=>{ html+=`<div class="entry"><span>${e.at}</span><span class="whoi">${e.by}</span><span>${e.what}</span></div>`; });
+    else [...r.log].reverse().forEach(e=>{ html+=`<div class="entry"><span>${e.at}</span><span class="whoi">${esc(e.by)}</span><span>${esc(e.what)}</span></div>`; });
     html+=`</div>`;
     el.innerHTML=html;
 
@@ -211,7 +213,7 @@
     rec(p.id).log.push({at:now(),by:who(),what:"nota: "+txt}); save(state); renderDetail();
   }
 
-  document.getElementById("who").onchange=()=>{};
+  document.getElementById("reset").onclick=()=>{ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };
   renderList(); renderDetail();
 })();
 </script>
