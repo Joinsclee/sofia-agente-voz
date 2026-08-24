@@ -85,13 +85,14 @@ def main():
         response_engine={"type": "retell-llm", "llm_id": llm.llm_id},
         agent_name=f"Isis · {MASCOTA_NAME} (MVP demo)",
         voice_id=NEUTRAL_VOICE,
+        voice_model="eleven_multilingual_v2",  # most natural/expressive ElevenLabs conv. model (vs robotic flash)
         language=rs.LANGUAGE_LATAM_SPANISH,
         voice_speed=1.0,          # natural, not slow (fixes earlier "habla despacio")
-        voice_temperature=1.1,    # expressive -> less robotic (client's #1 ask)
+        voice_temperature=1.35,   # varied prosody -> less monotone/robotic (client feedback)
         enable_backchannel=True,
         backchannel_frequency=0.6,
-        interruption_sensitivity=1.0,
-        responsiveness=1.0,
+        interruption_sensitivity=0.8,  # less choppy/jumpy turn-taking (down from max 1.0)
+        responsiveness=0.9,            # a natural beat before replying (down from max 1.0)
         webhook_url=f"{BACKEND}/retell-webhook",
         end_call_after_silence_ms=rs.DEFAULT_END_CALL_AFTER_SILENCE_MS,
         max_call_duration_ms=rs.DEFAULT_MAX_CALL_DURATION_MS,
