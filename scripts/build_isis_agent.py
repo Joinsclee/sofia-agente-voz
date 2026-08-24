@@ -23,11 +23,12 @@ sys.path.insert(0, str(ROOT))
 from app.services import retell_service as rs  # noqa: E402
 
 BACKEND = "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.run"
-# ElevenLabs "Lucy - Warm Latin Spanish Female" imported into the Retell workspace
-# via voice.add_resource (provider_voice_id Bh4tkGuEEIADxUACafG5). Most natural
-# neutral-LatAm female voice; picked over Cartesia for max realism. Verified live.
+# ElevenLabs "Amaf - Melodic Colombian" imported into the Retell workspace via
+# voice.add_resource (provider_voice_id 4kaLaTbziI05Jwh8zWad). Warm, mature
+# Colombian female voice — chosen by the client team over a Mexican-sounding
+# LatAm voice (the earlier "Lucy" read as Mexican). Neutral Colombian accent.
 # Fallback if the custom voice is ever missing: "cartesia-Hailey-Spanish-latin-america".
-NEUTRAL_VOICE = "custom_voice_fa83bb6a359b4b9737838422df"
+NEUTRAL_VOICE = "custom_voice_6dd7d2a3df0c4327560c133af5"
 MASCOTA_NAME = "Bianca"  # PLACEHOLDER — gerente's real non-negotiable Italian name pending (Ariel)
 
 # --- Isis multi-specialty catalog, spoken-friendly, prices APPROX (demo values) ---
