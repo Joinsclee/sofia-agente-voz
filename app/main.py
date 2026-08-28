@@ -1162,6 +1162,56 @@ async def mascota_3d_page() -> HTMLResponse:
     return _serve_demo("mascota-3d.html")
 
 
+@web_app.get("/sicurezza")
+async def sicurezza_page() -> HTMLResponse:
+    """Clínica Isis governed-RAG chat demo (Sicurezza)."""
+    return _serve_demo("sicurezza.html")
+
+
+@web_app.options("/sicurezza-chat")
+async def sicurezza_chat_options() -> JSONResponse:
+    return JSONResponse(
+        status_code=204,
+        content=None,
+        headers={**_CORS_ANY, "Access-Control-Allow-Methods": "POST, OPTIONS",
+                 "Access-Control-Allow-Headers": "Content-Type"},
+    )
+
+
+@web_app.post("/sicurezza-chat")
+async def sicurezza_chat(request: Request) -> JSONResponse:
+    """Sicurezza's governed reply to a conversation, grounded in the Isis Base de Verdad.
+
+    Runs on the Anthropic API key (not a subscription), never diagnoses, never
+    invents: what is not in the Base de Verdad is escalated to a human, not guessed.
+    """
+    from app.services import sicurezza_service as ss
+
+    try:
+        body = await request.json()
+        messages = body.get("messages") if isinstance(body, dict) else None
+        rol = (body.get("rol") if isinstance(body, dict) else None) or "paciente"
+        reply, web_used = ss.chat(messages or [], rol=rol)
+    except ss.SicurezzaError:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "empty_conversation"}, headers=_CORS_ANY)
+    except Exception as exc:  # noqa: BLE001 — demo endpoint: fail honestly, never leak internals
+        LOG.error("sicurezza-chat failed: %s", exc)
+        return JSONResponse(
+            status_code=200,
+            content={"ok": True, "data": {
+                "respuesta": "Ahora mismo no puedo responderte con seguridad. Déjame pasarte con una persona del equipo de Isis.",
+                "fuentes": [], "estado": "deriva_humano", "acciones": [], "web": False}},
+            headers=_CORS_ANY,
+        )
+    return JSONResponse(
+        status_code=200,
+        content={"ok": True, "data": {
+            "respuesta": reply.respuesta, "fuentes": reply.fuentes,
+            "estado": reply.estado, "acciones": reply.acciones, "web": web_used}},
+        headers=_CORS_ANY,
+    )
+
+
 @web_app.options("/isis-web-call")
 async def isis_web_call_options() -> JSONResponse:
     return JSONResponse(
@@ -1250,6 +1300,7 @@ if modal is not None:
             "pyyaml",
             "pydantic",
             "anthropic",
+            "openai",
             "retell-sdk",
             "twilio",
         )

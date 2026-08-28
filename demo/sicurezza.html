@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sicurezza · Clínica Isis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071417; --bg-2:#0a1e22; --panel:#0c2126; --panel-2:#102b31;
+    --line:rgba(148,204,196,.14); --line-2:rgba(148,204,196,.08);
+    --txt:#eff6f4; --muted:#a9c6c1; --muted-2:#7ba09a;
+    --teal:#35c2b0; --teal-d:#1c9184; --ink:#04231f;
+    --mine:#12564c; --amber:#f4c452; --red:#ff7a6b;
+    --ease:cubic-bezier(.23,1,.32,1); --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);
+    letter-spacing:-.006em;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1000px 560px at 84% -10%,rgba(53,194,176,.12),transparent 60%),radial-gradient(760px 520px at 8% 112%,rgba(255,143,118,.05),transparent 55%),linear-gradient(180deg,var(--bg-2),var(--bg));
+    display:flex;justify-content:center;min-height:100dvh}
+  .shell{width:min(720px,100%);display:flex;flex-direction:column;height:100dvh}
+  /* header */
+  header{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);
+    background:rgba(7,20,23,.7);backdrop-filter:blur(14px);position:sticky;top:0;z-index:5}
+  .mark{width:38px;height:38px;border-radius:11px;flex:0 0 auto;background:linear-gradient(140deg,var(--teal),var(--teal-d));
+    display:grid;place-items:center;color:var(--ink);font-weight:800;font-size:20px;box-shadow:0 6px 16px -5px rgba(53,194,176,.6)}
+  .htxt{min-width:0}
+  .htxt .n{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+  .htxt .s{font-size:12.5px;color:var(--muted-2)}
+  .gov{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#9df0e2;
+    background:rgba(53,194,176,.12);border:1px solid rgba(53,194,176,.32);border-radius:999px;padding:5px 11px;white-space:nowrap}
+  .gov svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+  .seg{margin-left:auto;display:inline-flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex:0 0 auto}
+  .segb{font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;border:0;border-radius:9px;padding:7px 14px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .segb svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .segb.on{background:linear-gradient(180deg,var(--teal),var(--teal-d));color:var(--ink)}
+  .segb:not(.on):hover{color:var(--txt)}
+  .src.web{color:#bfe3ff;background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.28)}
+  .src.web svg{stroke:#7cc0ff}
+  /* messages */
+  .msgs{flex:1;overflow-y:auto;padding:22px 20px 8px;display:flex;flex-direction:column;gap:16px}
+  .row{display:flex;gap:11px;max-width:100%}
+  .row.me{flex-direction:row-reverse}
+  .av{width:30px;height:30px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;font-weight:800;font-size:13px}
+  .av.her{background:linear-gradient(140deg,var(--teal),var(--teal-d));color:var(--ink)}
+  .av.me{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--line)}
+  .bubblewrap{min-width:0;max-width:82%;display:flex;flex-direction:column;gap:8px}
+  .row.me .bubblewrap{align-items:flex-end}
+  .bubble{padding:12px 15px;border-radius:15px;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+  .row.her .bubble{background:rgba(255,255,255,.045);border:1px solid var(--line-2);border-bottom-left-radius:5px}
+  .row.me .bubble{background:var(--mine);border-bottom-right-radius:5px}
+  .bubble.rich{white-space:normal}
+  .bubble.rich p{margin:0}
+  .bubble.rich p + p,.bubble.rich ol,.bubble.rich ul{margin-top:9px}
+  .bubble.rich ol,.bubble.rich ul{padding-left:20px;display:flex;flex-direction:column;gap:6px}
+  .bubble.rich li{padding-left:3px}
+  .bubble.rich strong{font-weight:700;color:#eafffb}
+  /* governance UX */
+  .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .src{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);
+    background:rgba(255,255,255,.04);border:1px solid var(--line-2);border-radius:999px;padding:3px 9px}
+  .src svg{width:11px;height:11px;stroke:var(--teal);fill:none;stroke-width:2}
+  .srclbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2);margin-right:1px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 11px}
+  .badge svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .badge.human{background:rgba(53,194,176,.14);color:#9df0e2;border:1px solid rgba(53,194,176,.34)}
+  .badge.valora{background:rgba(244,196,82,.13);color:#f6d688;border:1px solid rgba(244,196,82,.34)}
+  .badge.urg{background:rgba(255,122,107,.14);color:#ffb3aa;border:1px solid rgba(255,122,107,.36)}
+  /* contextual action buttons (appear based on what the person needs) */
+  .acts{display:flex;flex-wrap:wrap;gap:9px;margin-top:5px;animation:actsIn .38s var(--ease)}
+  @keyframes actsIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .act{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13.5px;font-weight:700;text-decoration:none;
+    border:0;border-radius:13px;padding:11px 16px;cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s,filter .2s}
+  .act:active{transform:translateY(1px) scale(.99)}
+  .act svg{width:18px;height:18px;flex:0 0 auto}
+  .act.wa{background:#25d366;color:#052c14;box-shadow:0 9px 20px -9px rgba(37,211,102,.65)}
+  .act.wa:hover{filter:brightness(1.06);box-shadow:0 13px 26px -9px rgba(37,211,102,.8)}
+  .act.wa svg{fill:#052c14}
+  .act.voz{background:linear-gradient(180deg,var(--teal),var(--teal-d));color:var(--ink);box-shadow:0 9px 20px -9px rgba(53,194,176,.6)}
+  .act.voz:hover{box-shadow:0 13px 26px -9px rgba(53,194,176,.82)}
+  .act.voz svg{stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  /* typing */
+  .typing{display:inline-flex;gap:4px;padding:14px 15px;background:rgba(255,255,255,.045);border:1px solid var(--line-2);border-radius:15px;border-bottom-left-radius:5px}
+  .typing i{width:6px;height:6px;border-radius:50%;background:var(--muted-2);animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  /* suggestions */
+  .suggest{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 12px}
+  .chip{font:inherit;font-size:13px;font-weight:600;color:var(--txt);background:rgba(255,255,255,.05);border:1px solid var(--line);
+    border-radius:999px;padding:8px 13px;cursor:pointer;transition:.15s}
+  .chip:hover{background:var(--panel-2);border-color:rgba(148,204,196,.28)}
+  /* composer */
+  .composer{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(7,20,23,.6)}
+  .composer input{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:13px;color:var(--txt);
+    padding:13px 15px;font:inherit;font-size:14.5px}
+  .composer input:focus{outline:none;border-color:var(--teal)}
+  .send{border:0;border-radius:13px;padding:0 18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(180deg,var(--teal),var(--teal-d));color:var(--ink);box-shadow:0 8px 18px -8px rgba(53,194,176,.7)}
+  .send svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .send[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .foot{padding:0 20px 10px;color:var(--muted-2);font-size:11.5px;line-height:1.5;text-wrap:pretty}
+  :focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="mark">S</div>
+      <div class="htxt">
+        <div class="n">Sicurezza</div>
+        <div class="s" id="hsub">Guía con IA · Clínica Isis</div>
+      </div>
+      <div class="seg" id="seg" role="tablist" aria-label="Rol">
+        <button class="segb on" data-rol="paciente" role="tab" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Paciente</button>
+        <button class="segb" data-rol="interno" role="tab" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Interno</button>
+      </div>
+    </header>
+
+    <div class="msgs" id="msgs" aria-live="polite" aria-label="Conversación con Sicurezza"></div>
+
+    <div class="suggest" id="suggest"></div>
+
+    <div class="composer">
+      <input id="inp" placeholder="Escríbele a Sicurezza…" autocomplete="off" aria-label="Mensaje" />
+      <button class="send" id="send" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4z"/></svg></button>
+    </div>
+    <p class="foot">Sicurezza responde solo con el conocimiento aprobado de Isis y cita sus fuentes. No diagnostica: el especialista valora en la cita. Demo nivel cero — los protocolos internos se cargan con la clínica.</p>
+  </main>
+
+<script>
+  // Same-origin by default (served from localhost -> localhost, from Modal -> Modal).
+  // Override with ?backend=<url> when embedding the page elsewhere.
+  const BACKEND = ((new URLSearchParams(location.search).get("backend")) || "").replace(/\/+$/,"");
+  const ENDPOINT = (BACKEND || "") + "/sicurezza-chat";
+
+  const msgsEl = document.getElementById("msgs");
+  const suggestEl = document.getElementById("suggest");
+  const inp = document.getElementById("inp");
+  const sendBtn = document.getElementById("send");
+
+  const history = [];   // {role:'user'|'assistant', content}
+  let busy = false;
+  let rol = "paciente";
+
+  const GREET = {
+    paciente: "Hola, soy Sicurezza, la guía de Clínica Isis. Puedo contarte de nuestros servicios, cómo es la valoración, los cuidados y más. ¿En qué te ayudo?",
+    interno: "Hola, soy Sicurezza en modo interno. Puedo ayudarte a consultar especialidades, procedimientos, requisitos y procesos de la clínica. ¿Qué necesitas?",
+  };
+  const STARTERS = {
+    paciente: [
+      "¿Qué servicios tienen?",
+      "¿Cuánto cuesta una rinoplastia?",
+      "¿Cómo es la recuperación de una cirugía?",
+      "Quiero agendar una valoración",
+      "¿Qué es la tarjeta Isis Gold?",
+    ],
+    interno: [
+      "¿Qué especialidades y áreas manejamos?",
+      "¿Qué exámenes requiere una blefaroplastia?",
+      "¿Cómo es el proceso de turismo médico?",
+      "¿Qué incluye el post-operatorio de una mamoplastia?",
+      "¿Con qué aliados de financiación trabajamos?",
+    ],
+  };
+
+  const ICON = {
+    src:'<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" opacity="0"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>',
+    human:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+    valora:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+    urg:'<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
+  };
+  const BADGE = {
+    deriva_humano: {cls:"human", ic:ICON.human, txt:"Te paso con una persona del equipo"},
+    restringido:   {cls:"valora", ic:ICON.valora, txt:"Lo define el especialista en tu valoración"},
+    urgencia:      {cls:"urg", ic:ICON.urg, txt:"Busca atención médica ahora"},
+  };
+
+  // Contextual action buttons — appear based on what Sicurezza decides the person needs.
+  const WA_NUMBER = "573021287747";  // WhatsApp real de Clínica Isis (302 128 7747)
+  const WA_TEXT = encodeURIComponent("Hola, quiero agendar una cita de valoración en Clínica Isis.");
+  const ACTIONS = {
+    agendar_whatsapp: { cls:"wa", href:`https://wa.me/${WA_NUMBER}?text=${WA_TEXT}`, label:"Agendar por WhatsApp",
+      ic:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20zm4.5-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.4-.5-.5-.8-1.1-1.1-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.1.1-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.7.7-.9 1.7-.4 2.9.5 1.2 1.3 2.3 2.5 3.3 1.7 1.4 3.1 1.8 3.7 1.9.5.1 1.1.1 1.6-.1.4-.2 1-.6 1.2-1.1.1-.3.1-.6 0-.7z"/></svg>' },
+    llamar_voz: { cls:"voz", href:"/mascota-3d", label:"Hablar con la asistente de voz",
+      ic:'<svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>' },
+  };
+
+  function bubbleRow(who){
+    const row = document.createElement("div"); row.className = "row " + who;
+    const av = document.createElement("div"); av.className = "av " + who; av.textContent = who==="her" ? "S" : "Tú";
+    const wrap = document.createElement("div"); wrap.className = "bubblewrap";
+    row.append(av, wrap);
+    msgsEl.appendChild(row);
+    return wrap;
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  // Safe subset of markdown: escape first, then bold + numbered/bulleted lists + paragraphs.
+  function renderMarkdown(text){
+    let s = esc(text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    const lines = s.split(/\r?\n/);
+    let html = '', listType = null, buf = [];
+    const flush = ()=>{ if(listType){ html += '<'+listType+'>'+buf.join('')+'</'+listType+'>'; buf=[]; listType=null; } };
+    for(const raw of lines){
+      const line = raw.trim();
+      const ol = line.match(/^\d+[.)]\s+(.*)$/);
+      const ul = line.match(/^[-*•]\s+(.*)$/);
+      if(ol){ if(listType!=='ol'){ flush(); listType='ol'; } buf.push('<li>'+ol[1]+'</li>'); }
+      else if(ul){ if(listType!=='ul'){ flush(); listType='ul'; } buf.push('<li>'+ul[1]+'</li>'); }
+      else if(line){ flush(); html += '<p>'+line+'</p>'; }  // a blank line does NOT break a list
+    }
+    flush();
+    return html || ('<p>'+s+'</p>');
+  }
+  function addText(wrap, text, rich){
+    const b = document.createElement("div"); b.className = "bubble" + (rich?" rich":"");
+    if(rich){ b.innerHTML = renderMarkdown(text); } else { b.textContent = text; }
+    wrap.appendChild(b); scroll();
+    return b;
+  }
+  function addMeta(wrap, fuentes, estado, web){
+    if((!fuentes || !fuentes.length) && (!estado || estado==="responde") && !web) return;
+    const meta = document.createElement("div"); meta.className = "meta";
+    if(fuentes && fuentes.length){
+      const lbl = document.createElement("span"); lbl.className="srclbl"; lbl.textContent="Fuentes"; meta.appendChild(lbl);
+      fuentes.slice(0,4).forEach(f=>{
+        const s = document.createElement("span"); s.className="src";
+        s.innerHTML = ICON.src; const t=document.createElement("span"); t.textContent=f; s.appendChild(t); meta.appendChild(s);
+      });
+    }
+    if(web){
+      const w = document.createElement("span"); w.className="src web";
+      w.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>';
+      const t=document.createElement("span"); t.textContent="con contexto de la web"; w.appendChild(t); meta.appendChild(w);
+    }
+    const bd = BADGE[estado];
+    if(bd){ const b=document.createElement("span"); b.className="badge "+bd.cls; b.innerHTML=bd.ic;
+      const t=document.createElement("span"); t.textContent=bd.txt; b.appendChild(t); meta.appendChild(b); }
+    wrap.appendChild(meta); scroll();
+  }
+  function addActions(wrap, acciones){
+    if(!acciones || !acciones.length) return;
+    const box = document.createElement("div"); box.className = "acts";
+    acciones.forEach(k=>{ const a = ACTIONS[k]; if(!a) return;
+      const el = document.createElement("a"); el.className = "act " + a.cls;
+      el.href = a.href; el.target = "_blank"; el.rel = "noopener";
+      el.innerHTML = a.ic; const t = document.createElement("span"); t.textContent = a.label; el.appendChild(t);
+      box.appendChild(el);
+    });
+    if(box.children.length){ wrap.appendChild(box); scroll(); }
+  }
+  function scroll(){ msgsEl.scrollTop = msgsEl.scrollHeight; }
+
+  function renderStarters(){
+    suggestEl.innerHTML = "";
+    (STARTERS[rol]||[]).forEach(q=>{ const c=document.createElement("button"); c.className="chip"; c.textContent=q;
+      c.onclick=()=>{ if(!busy){ inp.value=q; submit(); } }; suggestEl.appendChild(c); });
+  }
+  function setRol(newRol){
+    if(newRol===rol || busy) return;
+    rol = newRol;
+    document.querySelectorAll(".segb").forEach(b=>{ const on=b.dataset.rol===rol; b.classList.toggle("on",on); b.setAttribute("aria-selected", on?"true":"false"); });
+    document.getElementById("hsub").textContent = rol==="interno" ? "Modo interno · equipo de la clínica" : "Guía con IA · Clínica Isis";
+    document.body.dataset.rol = rol;
+    history.length = 0; msgsEl.innerHTML = "";
+    addText(bubbleRow("her"), GREET[rol]);
+    renderStarters(); inp.focus();
+  }
+
+  async function submit(){
+    const text = inp.value.trim();
+    if(!text || busy) return;
+    inp.value = "";
+    suggestEl.innerHTML = "";
+    addText(bubbleRow("me"), text);
+    history.push({role:"user", content:text});
+
+    busy = true; sendBtn.disabled = true;
+    const typingWrap = bubbleRow("her");
+    const typing = document.createElement("div"); typing.className="typing"; typing.innerHTML="<i></i><i></i><i></i>";
+    typingWrap.appendChild(typing); scroll();
+
+    let data;
+    try{
+      const r = await fetch(ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({messages: history, rol: rol})});
+      const j = await r.json();
+      data = (j && j.data) ? j.data : null;
+    }catch(e){ data = null; }
+
+    typing.remove();
+    if(!data){ data = {respuesta:"Ahora mismo no puedo responderte. Déjame pasarte con una persona del equipo de Isis.", fuentes:[], estado:"deriva_humano", acciones:(rol==="interno"?[]:["agendar_whatsapp","llamar_voz"]), web:false}; }
+    addText(typingWrap, data.respuesta, true);
+    addMeta(typingWrap, data.fuentes, data.estado, data.web);
+    addActions(typingWrap, data.acciones);
+    history.push({role:"assistant", content:data.respuesta});
+
+    busy = false; sendBtn.disabled = false; inp.focus();
+  }
+
+  sendBtn.addEventListener("click", submit);
+  inp.addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
+  document.querySelectorAll(".segb").forEach(b=> b.addEventListener("click", ()=>setRol(b.dataset.rol)) );
+
+  // opening greeting (display only; conversation history starts with the first real question)
+  document.body.dataset.rol = rol;
+  addText(bubbleRow("her"), GREET[rol]);
+  renderStarters();
+  inp.focus();
+</script>
+</body>
+</html>

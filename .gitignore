@@ -68,6 +68,9 @@ scripts/demo_intro.py
 # INSTALAR.md está escrito para que un alumno lo clone y lo instale. Si esta
 # carpeta entra, esa investigación viaja con cada copia.
 Documentación/
+# Análisis/propuestas de prospectos reales (PII) que quedan sueltos en la raíz.
+ISIS - Análisis de Llamada y propuesta.pdf
+*Análisis de Llamada*.pdf
 
 # Test/demo recordings — never commit (large binaries)
 *.mp4
