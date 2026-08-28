@@ -29,7 +29,7 @@ BACKEND = "https://dineroconsciente-digital--agente-voz-ghl-fastapi-app.modal.ru
 # LatAm voice (the earlier "Lucy" read as Mexican). Neutral Colombian accent.
 # Fallback if the custom voice is ever missing: "cartesia-Hailey-Spanish-latin-america".
 NEUTRAL_VOICE = "custom_voice_6dd7d2a3df0c4327560c133af5"
-MASCOTA_NAME = "Bianca"  # PLACEHOLDER — gerente's real non-negotiable Italian name pending (Ariel)
+MASCOTA_NAME = "Sicurezza"  # the guide's name (client chose Sicurezza); voice presents itself so
 
 # --- Isis multi-specialty catalog, spoken-friendly, prices APPROX (demo values) ---
 TREATMENTS = """  Cirugía plástica:
