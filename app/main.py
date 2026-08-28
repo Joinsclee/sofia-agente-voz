@@ -1178,6 +1178,16 @@ async def sicurezza_panel_img() -> Response:
                     headers={"Cache-Control": "public, max-age=86400"})
 
 
+@web_app.get("/sicurezza-avatar.jpg")
+async def sicurezza_avatar_img() -> Response:
+    """Sicurezza's avatar (the guide character)."""
+    path = _demo_html_path("sicurezza-avatar.jpg")
+    if not path:
+        return Response(status_code=404)
+    return Response(content=path.read_bytes(), media_type="image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @web_app.options("/sicurezza-chat")
 async def sicurezza_chat_options() -> JSONResponse:
     return JSONResponse(
