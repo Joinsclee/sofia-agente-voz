@@ -209,11 +209,11 @@
           <div class="mark" role="img" aria-label="Sicurezza"></div>
           <div class="htxt">
             <div class="n">Sicurezza</div>
-            <div class="s" id="hsub">Guía con IA · Clínica Isis</div>
+            <div class="s" id="hsub">Modo interno · equipo de la clínica</div>
           </div>
           <div class="seg" id="seg" role="tablist" aria-label="Rol">
-            <button class="segb on" data-rol="paciente" role="tab" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Paciente</button>
-            <button class="segb" data-rol="interno" role="tab" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Interno</button>
+            <button class="segb on" data-rol="interno" role="tab" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Interno</button>
+            <button class="segb" data-rol="paciente" role="tab" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Paciente</button>
           </div>
         </header>
 
@@ -254,7 +254,7 @@
 
   const history = [];   // {role:'user'|'assistant', content}
   let busy = false;
-  let rol = "paciente";
+  let rol = "interno";
 
   const GREET = {
     paciente: "Hola, soy Sicurezza, la guía de Clínica Isis. Puedo contarte de nuestros servicios, cómo es la valoración, los cuidados y más. ¿En qué te ayudo?",
