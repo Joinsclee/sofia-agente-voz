@@ -140,7 +140,14 @@
   @media (max-width:980px){
     .left{display:none}
     .right{padding:0}
+    /* the atmospheric image becomes the full-bleed background behind the chat */
+    .stage{background:
+      linear-gradient(180deg,rgba(6,18,21,.9) 0%,rgba(6,18,21,.66) 40%,rgba(6,18,21,.62) 64%,rgba(6,18,21,.95) 100%),
+      url('/sicurezza-panel.jpg') center/cover no-repeat}
     .card{max-width:none;height:100dvh;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;background:transparent}
+    header{background:rgba(7,20,23,.5);backdrop-filter:blur(8px)}
+    .composer{background:rgba(7,20,23,.55);backdrop-filter:blur(8px)}
+    .foot{background:rgba(7,20,23,.5)}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
