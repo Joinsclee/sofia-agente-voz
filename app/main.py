@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field, model_validator
 
 from app.auth import allowed_origins
@@ -1166,6 +1166,16 @@ async def mascota_3d_page() -> HTMLResponse:
 async def sicurezza_page() -> HTMLResponse:
     """Clínica Isis governed-RAG chat demo (Sicurezza)."""
     return _serve_demo("sicurezza.html")
+
+
+@web_app.get("/sicurezza-panel.jpg")
+async def sicurezza_panel_img() -> Response:
+    """The premium atmospheric background for the Sicurezza identity panel."""
+    path = _demo_html_path("sicurezza-panel.jpg")
+    if not path:
+        return Response(status_code=404)
+    return Response(content=path.read_bytes(), media_type="image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 
 @web_app.options("/sicurezza-chat")

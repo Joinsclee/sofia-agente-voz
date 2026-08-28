@@ -19,21 +19,53 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;font-family:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);
-    letter-spacing:-.006em;-webkit-font-smoothing:antialiased;
-    background:radial-gradient(1000px 560px at 84% -10%,rgba(53,194,176,.12),transparent 60%),radial-gradient(760px 520px at 8% 112%,rgba(255,143,118,.05),transparent 55%),linear-gradient(180deg,var(--bg-2),var(--bg));
-    display:flex;justify-content:center;min-height:100dvh}
-  .shell{width:min(720px,100%);display:flex;flex-direction:column;height:100dvh}
+    letter-spacing:-.006em;-webkit-font-smoothing:antialiased;min-height:100dvh;
+    background:
+      radial-gradient(1100px 680px at 30% -8%,rgba(53,194,176,.14),transparent 60%),
+      radial-gradient(900px 620px at 108% 60%,rgba(53,194,176,.07),transparent 55%),
+      radial-gradient(760px 560px at -6% 112%,rgba(255,143,118,.045),transparent 55%),
+      linear-gradient(180deg,var(--bg-2),var(--bg));}
+  .stage{display:flex;min-height:100dvh}
+  /* LEFT — identity + governance */
+  .left{flex:0 0 46%;max-width:560px;min-width:0;padding:60px 52px 46px 64px;display:flex;flex-direction:column;position:relative;overflow:hidden;
+    background:
+      linear-gradient(90deg,transparent 60%,rgba(7,20,23,.6) 100%),
+      linear-gradient(180deg,rgba(6,18,21,.86) 0%,rgba(6,18,21,.5) 42%,rgba(6,18,21,.58) 68%,rgba(6,18,21,.9) 100%),
+      url('/sicurezza-panel.jpg') center/cover no-repeat}
+  .left .brand{display:flex;align-items:center;gap:12px}
+  .left .lmk{width:44px;height:44px;border-radius:13px;flex:0 0 auto;background:linear-gradient(140deg,var(--teal),var(--teal-d));display:grid;place-items:center;color:var(--ink);font-weight:800;font-size:24px;box-shadow:0 10px 26px -8px rgba(53,194,176,.6),inset 0 1px 0 rgba(255,255,255,.35)}
+  .left .lbn{font-weight:700;font-size:19px;line-height:1.1}
+  .left .lbs{font-size:13px;color:var(--muted-2)}
+  .left .eyebrow{margin-top:46px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:9px}
+  .left .eyebrow .ln{height:1px;width:26px;background:linear-gradient(90deg,var(--teal),transparent)}
+  .left h1{margin:16px 0 0;font-size:clamp(32px,3.3vw,50px);line-height:1.03;letter-spacing:-.03em;font-weight:800;text-wrap:balance}
+  .left .lede{margin-top:18px;font-size:15.5px;line-height:1.6;color:var(--muted);max-width:40ch;text-wrap:pretty}
+  .left .lede b{color:var(--txt);font-weight:600}
+  .left .pillars{margin-top:32px;display:flex;flex-direction:column}
+  .left .pill{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-top:1px solid var(--line-2)}
+  .left .pill:last-child{border-bottom:1px solid var(--line-2)}
+  .left .pico{width:38px;height:38px;flex:0 0 auto;border-radius:11px;background:rgba(53,194,176,.1);border:1px solid rgba(53,194,176,.22);display:grid;place-items:center;color:var(--teal)}
+  .left .pico svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .left .pt{font-weight:700;font-size:15px}
+  .left .pd{font-size:13.5px;color:var(--muted-2);line-height:1.45;margin-top:2px}
+  .left .trust{margin-top:auto;padding-top:26px;display:flex;flex-direction:column;gap:12px}
+  .left .tl{font-size:12.5px;color:var(--muted-2)}
+  .left .tl b{color:var(--muted);font-weight:600}
+  .left .tchips{display:flex;gap:9px;flex-wrap:wrap}
+  .left .tchip{font-size:12.5px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:6px 13px;display:inline-flex;align-items:center;gap:7px}
+  .left .tchip svg{width:13px;height:13px;stroke:var(--teal);fill:none;stroke-width:2}
+  /* RIGHT — floating chat card */
+  .right{flex:1;display:flex;align-items:center;justify-content:center;padding:36px 44px}
+  .card{width:100%;max-width:748px;height:min(calc(100dvh - 72px),912px);display:flex;flex-direction:column;
+    background:linear-gradient(180deg,rgba(12,33,38,.86),rgba(9,26,30,.92));border:1px solid var(--line);border-radius:22px;overflow:hidden;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(12px)}
   /* header */
-  header{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);
-    background:rgba(7,20,23,.7);backdrop-filter:blur(14px);position:sticky;top:0;z-index:5}
+  header{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)}
   .mark{width:38px;height:38px;border-radius:11px;flex:0 0 auto;background:linear-gradient(140deg,var(--teal),var(--teal-d));
     display:grid;place-items:center;color:var(--ink);font-weight:800;font-size:20px;box-shadow:0 6px 16px -5px rgba(53,194,176,.6)}
   .htxt{min-width:0}
   .htxt .n{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
   .htxt .s{font-size:12.5px;color:var(--muted-2)}
-  .gov{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#9df0e2;
-    background:rgba(53,194,176,.12);border:1px solid rgba(53,194,176,.32);border-radius:999px;padding:5px 11px;white-space:nowrap}
-  .gov svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
   .seg{margin-left:auto;display:inline-flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex:0 0 auto}
   .segb{font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;border:0;border-radius:9px;padding:7px 14px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
   .segb svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -94,7 +126,7 @@
     border-radius:999px;padding:8px 13px;cursor:pointer;transition:.15s}
   .chip:hover{background:var(--panel-2);border-color:rgba(148,204,196,.28)}
   /* composer */
-  .composer{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(7,20,23,.6)}
+  .composer{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(7,20,23,.35)}
   .composer input{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:13px;color:var(--txt);
     padding:13px 15px;font:inherit;font-size:14.5px}
   .composer input:focus{outline:none;border-color:var(--teal)}
@@ -102,35 +134,74 @@
     background:linear-gradient(180deg,var(--teal),var(--teal-d));color:var(--ink);box-shadow:0 8px 18px -8px rgba(53,194,176,.7)}
   .send svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   .send[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
-  .foot{padding:0 20px 10px;color:var(--muted-2);font-size:11.5px;line-height:1.5;text-wrap:pretty}
+  .foot{margin:0;padding:11px 20px 14px;color:var(--muted-2);font-size:11.5px;line-height:1.5;text-wrap:pretty;border-top:1px solid var(--line-2)}
   :focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  /* responsive: below the two-panel breakpoint, the chat card goes full-screen */
+  @media (max-width:980px){
+    .left{display:none}
+    .right{padding:0}
+    .card{max-width:none;height:100dvh;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;background:transparent}
+  }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-  <main class="shell">
-    <header>
-      <div class="mark">S</div>
-      <div class="htxt">
-        <div class="n">Sicurezza</div>
-        <div class="s" id="hsub">Guía con IA · Clínica Isis</div>
+  <div class="stage">
+    <aside class="left">
+      <div class="brand"><span class="lmk">S</span><div><div class="lbn">Sicurezza</div><div class="lbs">Guía con IA · Clínica Isis</div></div></div>
+      <div class="eyebrow"><span class="ln"></span>Inteligencia con gobernanza</div>
+      <h1>Seguridad en cada respuesta.</h1>
+      <p class="lede">La guía de Clínica Isis responde con el <b>conocimiento aprobado</b> de la clínica, <b>cita sus fuentes</b> y sabe cuándo pasar a una persona. No es un bot: es el ADN de Isis, gobernado.</p>
+      <div class="pillars">
+        <div class="pill">
+          <div class="pico"><svg viewBox="0 0 24 24"><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
+          <div><div class="pt">Cita sus fuentes</div><div class="pd">Cada respuesta se apoya en la base de verdad de Isis, y se puede rastrear.</div></div>
+        </div>
+        <div class="pill">
+          <div class="pico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div><div class="pt">Nunca diagnostica</div><div class="pd">Lo clínico lo define el especialista en la valoración. Sin excepción.</div></div>
+        </div>
+        <div class="pill">
+          <div class="pico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></div>
+          <div><div class="pt">Deriva al humano</div><div class="pd">Para agendar o cerrar, siempre pasa al equipo de la clínica.</div></div>
+        </div>
       </div>
-      <div class="seg" id="seg" role="tablist" aria-label="Rol">
-        <button class="segb on" data-rol="paciente" role="tab" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Paciente</button>
-        <button class="segb" data-rol="interno" role="tab" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Interno</button>
+      <div class="trust">
+        <div class="tl"><b>Clínica Isis</b> · IPS · Envigado, Antioquia</div>
+        <div class="tchips">
+          <span class="tchip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>15 años</span>
+          <span class="tchip"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>+8.800 procedimientos</span>
+          <span class="tchip"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>ISO 9001</span>
+        </div>
       </div>
-    </header>
+    </aside>
 
-    <div class="msgs" id="msgs" aria-live="polite" aria-label="Conversación con Sicurezza"></div>
+    <div class="right">
+      <main class="card">
+        <header>
+          <div class="mark">S</div>
+          <div class="htxt">
+            <div class="n">Sicurezza</div>
+            <div class="s" id="hsub">Guía con IA · Clínica Isis</div>
+          </div>
+          <div class="seg" id="seg" role="tablist" aria-label="Rol">
+            <button class="segb on" data-rol="paciente" role="tab" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Paciente</button>
+            <button class="segb" data-rol="interno" role="tab" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Interno</button>
+          </div>
+        </header>
 
-    <div class="suggest" id="suggest"></div>
+        <div class="msgs" id="msgs" aria-live="polite" aria-label="Conversación con Sicurezza"></div>
 
-    <div class="composer">
-      <input id="inp" placeholder="Escríbele a Sicurezza…" autocomplete="off" aria-label="Mensaje" />
-      <button class="send" id="send" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4z"/></svg></button>
+        <div class="suggest" id="suggest"></div>
+
+        <div class="composer">
+          <input id="inp" placeholder="Escríbele a Sicurezza…" autocomplete="off" aria-label="Mensaje" />
+          <button class="send" id="send" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4z"/></svg></button>
+        </div>
+        <p class="foot">Sicurezza responde solo con el conocimiento aprobado de Isis y cita sus fuentes. No diagnostica: el especialista valora en la cita. Demo nivel cero — los protocolos internos se cargan con la clínica.</p>
+      </main>
     </div>
-    <p class="foot">Sicurezza responde solo con el conocimiento aprobado de Isis y cita sus fuentes. No diagnostica: el especialista valora en la cita. Demo nivel cero — los protocolos internos se cargan con la clínica.</p>
-  </main>
+  </div>
 
 <script>
   // Same-origin by default (served from localhost -> localhost, from Modal -> Modal).
